@@ -16,7 +16,7 @@ function DependencyDiagram() {
          aria-label="Illustration: a change in architecture document A-101 propagates to S-201, M-301, Q-101 and E-020">
       <g stroke="#2F5D8A" strokeWidth="1.5" fill="none">
         <path d="M104 77 L150 41 L150 41" /><path d="M104 97 L150 97" /><path d="M104 117 L150 153" />
-        <path d="M242 41 L258 41" /><path d="M242 153 L258 195" strokeDasharray="4 3" />
+        <path d="M242 153 L258 195" strokeDasharray="4 3" />
       </g>
       {node(12, 80, "A-101", "#B3372F")}
       {node(150, 24, "S-201", "#C2571A")}
@@ -40,7 +40,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(email.trim(), password);
-      router.push("/dashboard");
+      router.push("/projects");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Sign-in failed. Please try again.");
     } finally {

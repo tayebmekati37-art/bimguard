@@ -1,14 +1,14 @@
-﻿import logging
+import logging
 import time
 import uuid
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth
+from app import models  # noqa: F401  (register tables)
+from app.api import audit, auth, documents, projects
 from app.core.config import get_settings
-from app.db.session import Base, engine
-from app.models import user as _user  # noqa: F401  (register models)
+from app.models.document import ImmutableRevisionError
 
 logging.basicConfig(
     level=get_settings().log_level,
@@ -18,7 +18,7 @@ log = logging.getLogger("bimguard.request")
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="BIMGuard API", version="0.1.0",
+    app = FastAPI(title="BIMGuard API", version="0.2.0",
                   description="BIM change-impact and information-consistency engine (prototype).")
 
     app.add_middleware(
@@ -28,6 +28,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
         expose_headers=["x-request-id"],
     )
+
+    @app.exception_handler(ImmutableRevisionError)
+    async def immutable_handler(_request: Request, exc: ImmutableRevisionError):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
@@ -44,9 +49,9 @@ def create_app() -> FastAPI:
     def health() -> dict:
         return {"status": "ok"}
 
-    app.include_router(auth.router)
+    for router in (auth.router, projects.router, documents.router, audit.router):
+        app.include_router(router)
     return app
 
 
 app = create_app()
-Base.metadata.create_all(engine)  # replaced by Alembic migrations in Milestone 2

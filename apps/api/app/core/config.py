@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     log_level: str = "INFO"
     ai_enabled: bool = False
+    storage_dir: str = "./storage"
+    max_upload_mb: int = 50
 
 
 @lru_cache

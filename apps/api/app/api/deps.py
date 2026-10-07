@@ -1,5 +1,7 @@
+from dataclasses import dataclass
+
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -29,3 +31,13 @@ def require_roles(*roles: Role):
         return user
 
     return checker
+
+
+@dataclass
+class PageParams:
+    limit: int
+    offset: int
+
+
+def page_params(limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0)) -> PageParams:
+    return PageParams(limit=limit, offset=offset)

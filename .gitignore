@@ -10,5 +10,4 @@ storage/
 .ruff_cache/
 
 *.db
-
 *.egg-info/

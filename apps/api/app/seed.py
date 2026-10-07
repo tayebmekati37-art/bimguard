@@ -2,7 +2,7 @@
 from sqlalchemy import select
 
 from app.core.security import hash_password
-from app.db.session import Base, SessionLocal, engine
+from app.db.session import SessionLocal
 from app.models.user import Role, User
 
 DEMO_USERS = [
@@ -13,7 +13,6 @@ DEMO_USERS = [
 
 
 def seed() -> None:
-    Base.metadata.create_all(engine)
     with SessionLocal() as db:
         for email, name, role, pw in DEMO_USERS:
             if db.scalar(select(User).where(User.email == email)) is None:
