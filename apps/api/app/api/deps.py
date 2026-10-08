@@ -3,10 +3,10 @@ from dataclasses import dataclass
 import jwt
 from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.security import decode_access_token
-from app.db.session import get_db
+from app.db.session import SessionLocal, get_db
 from app.models.user import Role, User
 
 oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -41,3 +41,8 @@ class PageParams:
 
 def page_params(limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0)) -> PageParams:
     return PageParams(limit=limit, offset=offset)
+
+
+def get_session_factory() -> sessionmaker:
+    """Background tasks open their own sessions; tests override this to use the test database."""
+    return SessionLocal

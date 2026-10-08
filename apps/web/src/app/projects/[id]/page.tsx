@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell, useUser } from "@/components/AppShell";
+import { ElementsDialog } from "@/components/ElementsDialog";
 import { ErrorNote, Field, Modal, Pager, StatusBadge, btnDanger, btnPrimary, btnSecondary, inputCls, useDebounced } from "@/components/ui";
 import {
-  createDocument, deleteProject, downloadRevision, getProject, listDocuments, listRevisions, setRevisionStatus,
+  createDocument, deleteProject, downloadRevision, getProject, listDocuments, listRevisions, reextractRevision, setRevisionStatus,
   updateProject, uploadRevision, type Discipline, type DocumentRecord, type Page, type Project, type Revision, type RevisionStatus,
 } from "@/lib/api";
 import { DISCIPLINES, STATUSES, STATUS_TRANSITIONS, can, formatDate, formatSize } from "@/lib/labels";
@@ -136,8 +137,15 @@ function HistoryDialog({ doc, onClose, onChanged }: { doc: DocumentRecord; onClo
   const user = useUser();
   const [revisions, setRevisions] = useState<Revision[] | null>(null);
   const { busy, error, run } = useAction();
+  const [viewing, setViewing] = useState<Revision | null>(null);
   const load = useCallback(() => { listRevisions(doc.id).then(setRevisions).catch(() => setRevisions([])); }, [doc.id]);
   useEffect(load, [load]);
+  const processing = revisions?.some((r) => r.extraction_status === "pending") ?? false;
+  useEffect(() => {
+    if (!processing) return;
+    const timer = setTimeout(load, 1500);
+    return () => clearTimeout(timer);
+  }, [processing, revisions, load]);
 
   function allowed(rev: Revision): RevisionStatus[] {
     if (rev.revision_number !== doc.current_revision_number) return [];
@@ -146,6 +154,7 @@ function HistoryDialog({ doc, onClose, onChanged }: { doc: DocumentRecord; onClo
   }
 
   return (
+    <>
     <Modal title={`${doc.document_number} revision history`} onClose={onClose} wide>
       <p className="mt-1 text-sm text-muted">History is immutable. Uploading a new revision supersedes the previous one.</p>
       <ErrorNote message={error} />
@@ -154,7 +163,7 @@ function HistoryDialog({ doc, onClose, onChanged }: { doc: DocumentRecord; onClo
       {revisions && revisions.length > 0 && (
         <table className="mt-4 w-full text-sm">
           <thead className="border-b border-line text-left text-muted">
-            <tr><th className="py-2 font-medium">Rev</th><th className="font-medium">Status</th><th className="font-medium">File</th>
+            <tr><th className="py-2 font-medium">Rev</th><th className="font-medium">Status</th><th className="font-medium">File</th><th className="font-medium">Model data</th>
                 <th className="font-medium">Uploaded</th><th className="font-medium">Summary</th><th /></tr>
           </thead>
           <tbody>
@@ -163,10 +172,21 @@ function HistoryDialog({ doc, onClose, onChanged }: { doc: DocumentRecord; onClo
                 <td className="py-2 font-mono">v{r.revision_number}</td>
                 <td><StatusBadge status={r.status} /></td>
                 <td>{r.original_filename}<div className="text-xs text-muted">{formatSize(r.file_size)} · SHA-256 {r.checksum.slice(0, 10)}</div></td>
+                <td className="text-xs">
+                  {r.extraction_status === "pending" && <span className="text-status-warn">Processing</span>}
+                  {r.extraction_status === "ok" && <span>{r.element_count} elements<div className="text-muted">{r.model_schema}</div></span>}
+                  {r.extraction_status === "failed" && <span className="text-status-critical">Extraction failed<div className="max-w-[12rem] text-muted">{r.extraction_message}</div></span>}
+                  {r.extraction_status === "unsupported" && <span className="text-muted">No model data</span>}
+                </td>
                 <td>{formatDate(r.uploaded_at)}<div className="text-xs text-muted">{r.created_by_name}</div></td>
                 <td className="max-w-[14rem]">{r.change_summary || <span className="text-muted">None</span>}</td>
                 <td className="space-y-1 text-right">
-                  <button className={btnSecondary} onClick={() => run(() => downloadRevision(r))}>Download</button>
+                  {r.extraction_status === "ok" && <button className={btnSecondary} onClick={() => setViewing(r)}>Elements</button>}
+                  {can.editDocuments(user.role) && (r.extraction_status === "failed" || r.extraction_status === "pending") && (
+                    <button className={`${btnSecondary} ml-1`} disabled={busy}
+                            onClick={() => run(async () => { await reextractRevision(r.id); load(); })}>Retry extraction</button>
+                  )}
+                  <button className={`${btnSecondary} ml-1`} onClick={() => run(() => downloadRevision(r))}>Download</button>
                   {can.changeStatus(user.role) && allowed(r).map((s) => (
                     <button key={s} className={`${btnSecondary} ml-1`} disabled={busy}
                             onClick={() => run(async () => { await setRevisionStatus(r.id, s); load(); onChanged(); })}>
@@ -180,6 +200,8 @@ function HistoryDialog({ doc, onClose, onChanged }: { doc: DocumentRecord; onClo
         </table>
       )}
     </Modal>
+    {viewing && <ElementsDialog docNumber={doc.document_number} revision={viewing} onClose={() => setViewing(null)} />}
+    </>
   );
 }
 

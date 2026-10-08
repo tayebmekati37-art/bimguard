@@ -1,8 +1,11 @@
-﻿$root = Split-Path -Parent $PSScriptRoot
+# Starts the BIMGuard API and web app, then opens the browser.
+# Run: powershell -ExecutionPolicy Bypass -File C:\dev\bimguard\scripts\start.ps1
+$root = Split-Path -Parent $PSScriptRoot
 $api  = Join-Path $root "apps\api"
 $web  = Join-Path $root "apps\web"
 $py   = Join-Path $api ".venv\Scripts\python.exe"
 
+# Make sure the database is up to date (fast when nothing has changed)
 Set-Location $api
 if (-not (Get-ChildItem (Join-Path $api "alembic\versions") -Filter "*.py" -ErrorAction SilentlyContinue)) {
     Remove-Item (Join-Path $api "bimguard_dev.db") -ErrorAction SilentlyContinue

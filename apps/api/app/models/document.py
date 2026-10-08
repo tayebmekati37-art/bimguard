@@ -35,6 +35,13 @@ class RevisionStatus(str, enum.Enum):
     REJECTED = "rejected"
 
 
+class ExtractionStatus(str, enum.Enum):
+    PENDING = "pending"
+    OK = "ok"
+    FAILED = "failed"
+    UNSUPPORTED = "unsupported"
+
+
 class Document(Base):
     __tablename__ = "documents"
     __table_args__ = (
@@ -89,6 +96,12 @@ class DocumentRevision(Base):
     previous_revision_id: Mapped[str | None] = mapped_column(
         ForeignKey("document_revisions.id", ondelete="SET NULL"), nullable=True
     )
+
+    # Derived extraction state: mutable on purpose, not part of the immutable history.
+    extraction_status: Mapped[str] = mapped_column(String(16), default="pending", server_default="pending")
+    extraction_message: Mapped[str] = mapped_column(Text, default="", server_default="")
+    element_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    model_schema: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     document: Mapped[Document] = relationship(back_populates="revisions")
 

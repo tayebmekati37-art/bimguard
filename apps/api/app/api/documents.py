@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
-from app.api.deps import PageParams, get_current_user, page_params, require_roles
+from app.api.deps import PageParams, get_current_user, get_session_factory, page_params, require_roles
 from app.api.projects import get_project_or_404
 from app.core.clock import utcnow
 from app.db.session import get_db
@@ -15,7 +15,7 @@ from app.schemas.common import Page
 from app.schemas.document import (
     DocumentCreate, DocumentOut, DocumentUpdate, RevisionOut, RevisionStatusUpdate,
 )
-from app.services import audit, revisions, storage
+from app.services import audit, extraction, revisions, storage
 
 router = APIRouter(tags=["documents"])
 can_edit = require_roles(Role.ADMIN, Role.BIM_COORDINATOR, Role.ENGINEER)
@@ -104,18 +104,22 @@ def update_document(
 @router.post("/documents/{document_id}/revisions", response_model=RevisionOut, status_code=201)
 def upload_revision(
     document_id: str,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     change_summary: str = Form("", max_length=4000),
     status: RevisionStatus = Form(RevisionStatus.DRAFT),
     revision_number: int | None = Form(None, ge=1),
+    session_factory: sessionmaker = Depends(get_session_factory),
     db: Session = Depends(get_db), user: User = Depends(can_edit),
 ) -> DocumentRevision:
     document = _document_or_404(db, document_id)
     if document.project.status == ProjectStatus.ARCHIVED:
         raise HTTPException(409, "This project is archived. Restore it before uploading revisions.")
-    return revisions.create_revision(
+    revision = revisions.create_revision(
         db, user, document, file, change_summary=change_summary, status=status, revision_number=revision_number
     )
+    background_tasks.add_task(extraction.extract_revision, session_factory, revision.id)
+    return revision
 
 
 @router.get("/documents/{document_id}/revisions", response_model=list[RevisionOut])

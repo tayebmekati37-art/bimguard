@@ -33,7 +33,7 @@ def _root() -> Path:
 
 
 def _check_signature(extension: str, head: bytes) -> None:
-    stripped = head.lstrip()
+    stripped = head.lstrip(b"\xef\xbb\xbf \t\r\n")
     ok = True
     if extension == ".ifc":
         ok = stripped.startswith(b"ISO-10303-21")

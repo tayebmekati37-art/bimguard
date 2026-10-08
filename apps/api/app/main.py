@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401  (register tables)
-from app.api import audit, auth, documents, projects
+from app.api import audit, auth, bim, documents, projects
 from app.core.config import get_settings
 from app.models.document import ImmutableRevisionError
 
@@ -18,7 +18,7 @@ log = logging.getLogger("bimguard.request")
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="BIMGuard API", version="0.2.0",
+    app = FastAPI(title="BIMGuard API", version="0.3.0",
                   description="BIM change-impact and information-consistency engine (prototype).")
 
     app.add_middleware(
@@ -49,7 +49,7 @@ def create_app() -> FastAPI:
     def health() -> dict:
         return {"status": "ok"}
 
-    for router in (auth.router, projects.router, documents.router, audit.router):
+    for router in (auth.router, projects.router, documents.router, bim.router, audit.router):
         app.include_router(router)
     return app
 

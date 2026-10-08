@@ -141,3 +141,8 @@ def test_audit_trail_records_key_events(client, auth, project, document):
     actions = {i["action"] for i in items}
     assert {"project.created", "document.created", "revision.created"} <= actions
     assert client.get("/audit-logs", headers=auth("viewer")).status_code == 403
+
+
+def test_utf8_bom_is_accepted(client, auth, document):
+    r = upload(client, auth("engineer"), document["id"], content=b"\xef\xbb\xbf" + IFC_V1)
+    assert r.status_code == 201

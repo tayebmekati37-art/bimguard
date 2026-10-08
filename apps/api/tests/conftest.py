@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool  # noqa: E402
 
 from app.core.config import get_settings  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
+from app.api.deps import get_session_factory  # noqa: E402
 from app.db.session import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models.user import Role, User  # noqa: E402
@@ -42,6 +43,7 @@ def client(session_factory, tmp_path, monkeypatch):
             yield db
 
     app.dependency_overrides[get_db] = override
+    app.dependency_overrides[get_session_factory] = lambda: session_factory
     yield TestClient(app)
     app.dependency_overrides.clear()
 

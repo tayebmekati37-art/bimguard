@@ -1,0 +1,92 @@
+{
+  "schema": "bimguard.elements/1",
+  "model": {
+    "name": "E-020 Equipment schedule, Level 02",
+    "source_documents": [
+      {
+        "document": "A-101",
+        "revision": 12
+      }
+    ],
+    "note": "Simulated sample data"
+  },
+  "elements": [
+    {
+      "id": "CMP-020",
+      "class": "Equipment",
+      "name": "Screw compressor CMP-020",
+      "level": "L02",
+      "room": "205",
+      "properties": {
+        "PowerKW": 55.0,
+        "Manufacturer": "Generic",
+        "SourceDocument": "A-101",
+        "SourceRevision": 12
+      },
+      "geometry": {
+        "location": [
+          27000,
+          3000,
+          4500.0
+        ],
+        "rotation_deg": 0.0,
+        "dimensions": {
+          "Length": 2600,
+          "Width": 1400,
+          "Height": 1900
+        }
+      }
+    },
+    {
+      "id": "RCV-021",
+      "class": "Equipment",
+      "name": "Air receiver RCV-021",
+      "level": "L02",
+      "room": "205",
+      "properties": {
+        "VolumeLitres": 1000.0,
+        "SourceDocument": "A-101",
+        "SourceRevision": 12
+      },
+      "geometry": {
+        "location": [
+          27000,
+          6200,
+          4500.0
+        ],
+        "rotation_deg": 0.0,
+        "dimensions": {
+          "Length": 1200,
+          "Width": 1200,
+          "Height": 2400
+        }
+      }
+    },
+    {
+      "id": "SWG-040",
+      "class": "Equipment",
+      "name": "Switchgear SWG-040",
+      "level": "L02",
+      "room": "204",
+      "properties": {
+        "PowerKW": 0.0,
+        "Voltage": "400V",
+        "SourceDocument": "A-101",
+        "SourceRevision": 12
+      },
+      "geometry": {
+        "location": [
+          11000,
+          6500,
+          4500.0
+        ],
+        "rotation_deg": 0.0,
+        "dimensions": {
+          "Length": 2000,
+          "Width": 800,
+          "Height": 2200
+        }
+      }
+    }
+  ]
+}

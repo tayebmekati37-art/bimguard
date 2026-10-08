@@ -56,6 +56,10 @@ class RevisionOut(BaseModel):
     status: RevisionStatus
     change_summary: str
     previous_revision_id: str | None
+    extraction_status: str
+    extraction_message: str
+    element_count: int | None
+    model_schema: str | None
 
 
 class RevisionStatusUpdate(BaseModel):

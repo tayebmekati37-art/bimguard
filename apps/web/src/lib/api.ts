@@ -21,6 +21,17 @@ export interface Revision {
   id: string; document_id: string; revision_number: number; original_filename: string; file_size: number;
   checksum: string; uploaded_at: string; created_by_name: string; status: RevisionStatus;
   change_summary: string; previous_revision_id: string | null;
+  extraction_status: "pending" | "ok" | "failed" | "unsupported"; extraction_message: string;
+  element_count: number | null; model_schema: string | null;
+}
+export interface ElementRecord {
+  id: string; revision_id: string; guid: string; ifc_class: string; name: string; tag: string;
+  level: string | null; room: string | null; material: string | null;
+  properties: Record<string, unknown>;
+  geometry: { location?: number[]; rotation_deg?: number; dimensions?: Record<string, number> };
+}
+export interface ModelSummary {
+  total: number; by_class: { key: string; count: number }[]; by_level: { key: string; count: number }[];
 }
 
 export class ApiError extends Error {
@@ -113,3 +124,11 @@ export async function downloadRevision(rev: Revision): Promise<void> {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+export const listElements = (
+  revisionId: string,
+  p: { ifc_class?: string; level?: string; room?: string; q?: string; limit?: number; offset?: number },
+) => request<Page<ElementRecord>>(`/revisions/${revisionId}/elements${qs(p)}`);
+export const getModelSummary = (revisionId: string) => request<ModelSummary>(`/revisions/${revisionId}/summary`);
+export const reextractRevision = (revisionId: string) =>
+  request<Revision>(`/revisions/${revisionId}/extract`, { method: "POST" });
