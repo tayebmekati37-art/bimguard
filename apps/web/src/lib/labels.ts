@@ -24,7 +24,15 @@ export const can = {
   deleteProjects: (r: Role) => r === "admin",
   editDocuments: (r: Role) => r === "admin" || r === "bim_coordinator" || r === "engineer",
   changeStatus: (r: Role) => r !== "viewer",
+  compare: (r: Role) => r !== "viewer",
 };
+
+export const CHANGE_TYPES: Record<string, string> = {
+  ELEMENT_ADDED: "Added", ELEMENT_REMOVED: "Removed", GEOMETRY_CHANGED: "Geometry", PARAMETER_CHANGED: "Parameter",
+  SPATIAL_CHANGED: "Spatial", CLASSIFICATION_CHANGED: "Classification", METADATA_CHANGED: "Metadata",
+  REFERENCE_CHANGED: "Reference",
+};
+export const SEVERITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const;
 
 export const formatDate = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });

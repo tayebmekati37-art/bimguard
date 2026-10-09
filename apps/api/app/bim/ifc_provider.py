@@ -116,7 +116,35 @@ class IfcProvider(BIMProvider):
             geometry["rotation_deg"] = rotation + 0.0
         if dimensions:
             geometry["dimensions"] = dimensions
+        footprint = self._footprint(entity)
+        if footprint:
+            geometry["footprint"] = footprint
         return geometry
+
+    def _footprint(self, entity: Any) -> dict[str, float] | None:
+        """Local-coordinate extent of a rectangular extruded body (walls, columns, beams, doors,
+        equipment). Used for the 2D plan view and body-size change detection. Other body types give None."""
+        try:
+            representation = entity.Representation
+            if representation is None:
+                return None
+            for shape in representation.Representations or ():
+                if shape.RepresentationIdentifier != "Body":
+                    continue
+                for item in shape.Items or ():
+                    if not item.is_a("IfcExtrudedAreaSolid") or not item.SweptArea.is_a("IfcRectangleProfileDef"):
+                        continue
+                    profile, mm = item.SweptArea, self._mm_per_unit
+                    px = py = 0.0
+                    if profile.Position is not None:
+                        px, py = (float(c) for c in profile.Position.Location.Coordinates[:2])
+                    hx, hy = float(profile.XDim) / 2, float(profile.YDim) / 2
+                    return {"x0": round((px - hx) * mm, 3), "y0": round((py - hy) * mm, 3),
+                            "x1": round((px + hx) * mm, 3), "y1": round((py + hy) * mm, 3),
+                            "height": round(float(item.Depth) * mm, 3)}
+        except (AttributeError, TypeError, ValueError):
+            return None
+        return None
 
     @staticmethod
     def _spatial(entity: Any) -> tuple[str | None, str | None]:

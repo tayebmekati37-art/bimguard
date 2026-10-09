@@ -132,3 +132,33 @@ export const listElements = (
 export const getModelSummary = (revisionId: string) => request<ModelSummary>(`/revisions/${revisionId}/summary`);
 export const reextractRevision = (revisionId: string) =>
   request<Revision>(`/revisions/${revisionId}/extract`, { method: "POST" });
+
+export interface Comparison {
+  id: string; project_id: string; document_id: string; document_number: string;
+  from_revision_id: string; to_revision_id: string; from_revision_number: number; to_revision_number: number;
+  created_at: string; created_by_name: string; total_changes: number;
+  counts: { by_type?: Record<string, number>; by_severity?: Record<string, number>;
+            elements_old?: number; elements_new?: number; elements_unchanged?: number };
+  config: Record<string, unknown>;
+}
+export interface ChangeRecord {
+  id: string; element_guid: string | null; element_tag: string; element_name: string; ifc_class: string;
+  change_type: string; field: string; old_value: unknown; new_value: unknown; severity: string;
+  confidence: number; summary: string; match_method: string; detail: Record<string, unknown>;
+}
+export interface PlanGeometry {
+  location?: number[]; rotation_deg?: number;
+  footprint?: { x0: number; y0: number; x1: number; y1: number; height: number };
+}
+export interface PlanElement {
+  guid: string; tag: string; name: string; ifc_class: string; status: "added" | "removed" | "modified" | "unchanged";
+  change_types: string[]; old: PlanGeometry | null; new: PlanGeometry | null;
+}
+export interface PlanData { changed: PlanElement[]; context: PlanElement[] }
+
+export const getRevisionComparison = (revisionId: string) => request<Comparison>(`/revisions/${revisionId}/comparison`);
+export const runComparison = (revisionId: string) => request<Comparison>(`/revisions/${revisionId}/compare`, { method: "POST" });
+export const listChanges = (
+  comparisonId: string, p: { change_type?: string; severity?: string; q?: string; limit?: number; offset?: number },
+) => request<Page<ChangeRecord>>(`/comparisons/${comparisonId}/changes${qs(p)}`);
+export const getPlan = (comparisonId: string) => request<PlanData>(`/comparisons/${comparisonId}/footprints`);

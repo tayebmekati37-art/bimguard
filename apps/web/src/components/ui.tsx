@@ -84,3 +84,16 @@ export function useDebounced<T>(value: T, ms = 250): T {
   useEffect(() => { const t = setTimeout(() => setV(value), ms); return () => clearTimeout(t); }, [value, ms]);
   return v;
 }
+
+const SEVERITY_TONE: Record<string, string> = {
+  LOW: "border-line text-muted", MEDIUM: "border-status-warn text-status-warn",
+  HIGH: "border-status-stale text-status-stale", CRITICAL: "border-status-critical bg-status-critical/5 text-status-critical",
+};
+
+export function SeverityBadge({ severity }: { severity: string }) {
+  return (
+    <span className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${SEVERITY_TONE[severity] ?? SEVERITY_TONE.LOW}`}>
+      {severity.charAt(0) + severity.slice(1).toLowerCase()}
+    </span>
+  );
+}

@@ -4,7 +4,7 @@
  The API must be running. Architecture v2 is NOT uploaded: that is the revision you upload during the demo.
  Run: powershell -ExecutionPolicy Bypass -File C:\dev\bimguard\scripts\load-sample-project.ps1
 #>
-param([string]$ApiUrl = "http://localhost:8000")
+param([string]$ApiUrl = "http://localhost:8000", [switch]$WithArchitectureV2)
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $ifc  = Join-Path $root "data\sample_ifc"
@@ -17,10 +17,10 @@ function Call($Method, $Path, $Token, $Body, $Form) {
     try { (Invoke-WebRequest @params).Content | ConvertFrom-Json }
     catch { throw "API call $Method $Path failed: $($_.ErrorDetails.Message)" }
 }
-function Upload($DocId, $Token, $File, $Revision, $Summary) {
+function Upload($DocId, $Token, $File, $Revision, $Summary, $Status = "approved") {
     $out = Join-Path $env:TEMP "bimguard_sample_upload.json"
     $code = & curl.exe -s -o $out -w "%{http_code}" -X POST -H "Authorization: Bearer $Token" `
-        -F "file=@$File" -F "revision_number=$Revision" -F "status=approved" -F "change_summary=$Summary" "$ApiUrl/documents/$DocId/revisions"
+        -F "file=@$File" -F "revision_number=$Revision" -F "status=$Status" -F "change_summary=$Summary" "$ApiUrl/documents/$DocId/revisions"
     if ($code -ne "201") { throw "Upload of $File failed ($code): $(Get-Content $out -Raw)" }
 }
 
@@ -39,10 +39,22 @@ $docs = @(
     @{ n = "Q-101"; name = "Level 2 Quantity Take-off"; d = "quantity";    f = Join-Path $json "quantity_v1.json";   r = 6 },
     @{ n = "E-020"; name = "Equipment Schedule";       d = "equipment";    f = Join-Path $json "equipment_v1.json";  r = 3 }
 )
+$ids = @{}
 foreach ($doc in $docs) {
     $created = Call "POST" "/projects/$($project.id)/documents" $token @{ document_number = $doc.n; name = $doc.name; discipline = $doc.d }
+    $ids[$doc.n] = $created.id
     Upload $created.id $token $doc.f $doc.r "Baseline sample revision"
     Write-Host ("  {0}  v{1}  {2}" -f $doc.n, $doc.r, (Split-Path $doc.f -Leaf))
+}
+if ($WithArchitectureV2) {
+    Write-Host "Waiting for A-101 v12 to finish processing..."
+    for ($i = 0; $i -lt 30; $i++) {
+        $rev = (Call "GET" "/documents/$($ids['A-101'])/revisions" $token) | Select-Object -First 1
+        if ($rev.extraction_status -ne "pending") { break }
+        Start-Sleep -Seconds 1
+    }
+    Upload $ids["A-101"] $token (Join-Path $ifc "architecture_v2.ifc") 13 "Wall W-204 moved 300 mm, door D-202A relocated, room 204 parameters changed, wall W-207 added" "in_review"
+    Write-Host "  A-101  v13  architecture_v2.ifc  (changes are detected automatically)"
 }
 Write-Host "`nDone. Open http://localhost:3000/projects/$($project.id)"
 Write-Host "Click History on a document: the Model data column shows the extracted elements."

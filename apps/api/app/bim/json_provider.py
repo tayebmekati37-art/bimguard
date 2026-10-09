@@ -1,4 +1,4 @@
-﻿import json
+import json
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
@@ -78,4 +78,3 @@ class MockProvider(BIMProvider):
 
     def get_element(self, guid: str) -> ElementData | None:
         return self._elements.get(guid)
-

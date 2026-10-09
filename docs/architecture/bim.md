@@ -24,7 +24,7 @@ then compares field by field for the detailed change records.
 Products (`IfcElement` except openings, plus `IfcSpace`), attributes, property sets, quantity sets (`Qto_*`),
 materials, local placement (composed through the placement chain, converted to mm with the model's unit scale),
 and spatial containment: the storey (`level`) and, for elements contained in an `IfcSpace`, the room.
-It does **not** tessellate geometry. Location, rotation and quantity-based dimensions are what change detection
+For rectangular extruded bodies it also stores the body's local extent (`footprint`), used by the 2D plan view and body-size change detection. It does **not** tessellate geometry. Location, rotation and quantity-based dimensions are what change detection
 compares. Full IFC geometry diffing is a documented future extension.
 
 ## Extraction pipeline

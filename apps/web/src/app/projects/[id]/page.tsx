@@ -182,6 +182,9 @@ function HistoryDialog({ doc, onClose, onChanged }: { doc: DocumentRecord; onClo
                 <td className="max-w-[14rem]">{r.change_summary || <span className="text-muted">None</span>}</td>
                 <td className="space-y-1 text-right">
                   {r.extraction_status === "ok" && <button className={btnSecondary} onClick={() => setViewing(r)}>Elements</button>}
+                  {r.extraction_status === "ok" && r.previous_revision_id && (
+                    <Link href={`/revisions/${r.id}/compare`} className={`${btnSecondary} ml-1 inline-block`}>Changes</Link>
+                  )}
                   {can.editDocuments(user.role) && (r.extraction_status === "failed" || r.extraction_status === "pending") && (
                     <button className={`${btnSecondary} ml-1`} disabled={busy}
                             onClick={() => run(async () => { await reextractRevision(r.id); load(); })}>Retry extraction</button>

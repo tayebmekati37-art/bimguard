@@ -89,3 +89,45 @@ def test_ifc_upload_is_extracted(client, auth, document):
         assert rev["model_schema"] == "IFC4"
     wall = client.get(f"/revisions/{rev['id']}/elements?q=W-204", headers=h).json()["items"][0]
     assert wall["geometry"]["location"][0] == 10300.0
+
+
+def test_interrupted_extractions_are_requeued(client, auth, document, session_factory):
+    from sqlalchemy import update
+
+    from app.models.document import DocumentRevision
+    from app.services.extraction import requeue_pending
+
+    h = auth("engineer")
+    upload(client, h, document["id"], content=(JSON_DIR / "equipment_v1.json").read_bytes(), filename="e.json")
+    with session_factory() as db:  # simulate a server restart that left the revision pending
+        db.execute(update(DocumentRevision).values(extraction_status="pending", element_count=None))
+        db.commit()
+    assert revision(client, h, document["id"])["extraction_status"] == "pending"
+    assert requeue_pending(session_factory) == 1
+    again = revision(client, h, document["id"])
+    assert again["extraction_status"] == "ok" and again["element_count"] == 3
+    assert requeue_pending(session_factory) == 0
+
+
+def test_out_of_order_extraction_still_produces_the_comparison(client, auth, document, session_factory):
+    from sqlalchemy import update
+
+    from app.models.document import DocumentRevision
+    from app.services.extraction import requeue_pending
+
+    h = auth("engineer")
+    v1 = json.dumps({"elements": [{"id": "a", "class": "IfcWall", "tag": "W-1",
+                                   "geometry": {"location": [0.0, 0.0, 0.0]}}]}).encode()
+    v2 = json.dumps({"elements": [{"id": "a", "class": "IfcWall", "tag": "W-1",
+                                   "geometry": {"location": [300.0, 0.0, 0.0]}}]}).encode()
+    upload(client, h, document["id"], content=v1, filename="a.json")
+    upload(client, h, document["id"], content=v2, filename="b.json")
+    newest = client.get(f"/documents/{document['id']}/revisions", headers=h).json()[0]
+    assert client.get(f"/revisions/{newest['id']}/comparison", headers=h).json()["total_changes"] == 1
+    # the older revision's extraction "finishes later": the pair must be compared again, not lost
+    with session_factory() as db:
+        db.execute(update(DocumentRevision).where(DocumentRevision.revision_number == 1)
+                   .values(extraction_status="pending"))
+        db.commit()
+    assert requeue_pending(session_factory) == 1
+    assert client.get(f"/revisions/{newest['id']}/comparison", headers=h).json()["total_changes"] == 1

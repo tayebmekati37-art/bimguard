@@ -130,3 +130,17 @@ def test_ifc_garbage_file_is_a_clear_error(tmp_path):
     path.write_text("ISO-10303-21;\nthis is not a model")
     with pytest.raises(BimError, match="could not be parsed"):
         IfcProvider().import_model(path)
+
+
+def test_ifc_body_footprint_is_extracted(ifc_v1):
+    wall = by_tag(ifc_v1, "W-204").geometry["footprint"]
+    assert wall == {"x0": 0.0, "y0": -100.0, "x1": 8000.0, "y1": 100.0, "height": 4000.0}
+    column = by_tag(IfcProviderFor("structure_v1.ifc"), "C-A1").geometry["footprint"]
+    assert column == {"x0": -200.0, "y0": -200.0, "x1": 200.0, "y1": 200.0, "height": 4000.0}
+    assert "footprint" not in by_tag(ifc_v1, "204").geometry  # spaces have no body in the samples
+
+
+def IfcProviderFor(name):
+    provider = IfcProvider()
+    provider.import_model(IFC_DIR / name)
+    return provider

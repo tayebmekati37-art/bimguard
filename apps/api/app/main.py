@@ -1,14 +1,18 @@
 import logging
+import threading
 import time
 import uuid
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401  (register tables)
-from app.api import audit, auth, bim, documents, projects
+from app.api import audit, auth, bim, comparisons, documents, projects
 from app.core.config import get_settings
+from app.db.session import SessionLocal
 from app.models.document import ImmutableRevisionError
+from app.services import extraction
 
 logging.basicConfig(
     level=get_settings().log_level,
@@ -17,8 +21,23 @@ logging.basicConfig(
 log = logging.getLogger("bimguard.request")
 
 
+def _requeue_pending() -> None:
+    try:
+        count = extraction.requeue_pending(SessionLocal)
+        if count:
+            log.info("Re-queued %s revisions whose model extraction was interrupted", count)
+    except Exception:  # noqa: BLE001 - e.g. migrations not applied yet; never block startup
+        log.exception("Could not re-queue pending extractions")
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    threading.Thread(target=_requeue_pending, name="requeue-pending", daemon=True).start()
+    yield
+
+
 def create_app() -> FastAPI:
-    app = FastAPI(title="BIMGuard API", version="0.3.0",
+    app = FastAPI(title="BIMGuard API", version="0.4.1", lifespan=lifespan,
                   description="BIM change-impact and information-consistency engine (prototype).")
 
     app.add_middleware(
@@ -49,7 +68,7 @@ def create_app() -> FastAPI:
     def health() -> dict:
         return {"status": "ok"}
 
-    for router in (auth.router, projects.router, documents.router, bim.router, audit.router):
+    for router in (auth.router, projects.router, documents.router, bim.router, comparisons.router, audit.router):
         app.include_router(router)
     return app
 
