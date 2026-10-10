@@ -46,6 +46,19 @@ foreach ($doc in $docs) {
     Upload $created.id $token $doc.f $doc.r "Baseline sample revision"
     Write-Host ("  {0}  v{1}  {2}" -f $doc.n, $doc.r, (Split-Path $doc.f -Leaf))
 }
+# Dependencies between the documents. Each one is registered as consistent with the current revisions.
+$links = @(
+    @{ s = "S-201"; t = "A-101"; k = "depends_on";           c = 0.95; r = "Structural layout follows the architectural walls, openings and floor plan" },
+    @{ s = "M-301"; t = "A-101"; k = "depends_on";           c = 0.90; r = "HVAC routing and equipment rooms depend on the architectural layout" },
+    @{ s = "Q-101"; t = "A-101"; k = "quantity_based_on";    c = 1.00; r = "Wall, door and floor-area take-offs are measured from the architectural model" },
+    @{ s = "E-020"; t = "M-301"; k = "depends_on";           c = 0.80; r = "Equipment positions are coordinated with the HVAC layout" },
+    @{ s = "M-301"; t = "S-201"; k = "spatially_related_to"; c = 0.60; r = "Ducts must clear the structural framing in the same ceiling zone" }
+)
+foreach ($l in $links) {
+    Call "POST" "/dependencies" $token @{ source_document_id = $ids[$l.s]; target_document_id = $ids[$l.t]; relationship_type = $l.k; confidence = $l.c; reason = $l.r } | Out-Null
+    Write-Host ("  {0} {1} {2}" -f $l.s, $l.k, $l.t)
+}
+
 if ($WithArchitectureV2) {
     Write-Host "Waiting for A-101 v12 to finish processing..."
     for ($i = 0; $i -lt 30; $i++) {
@@ -54,7 +67,7 @@ if ($WithArchitectureV2) {
         Start-Sleep -Seconds 1
     }
     Upload $ids["A-101"] $token (Join-Path $ifc "architecture_v2.ifc") 13 "Wall W-204 moved 300 mm, door D-202A relocated, room 204 parameters changed, wall W-207 added" "in_review"
-    Write-Host "  A-101  v13  architecture_v2.ifc  (changes are detected automatically)"
+    Write-Host "  A-101  v13  architecture_v2.ifc  (changes detected; S-201, M-301 and Q-101 become stale)"
 }
 Write-Host "`nDone. Open http://localhost:3000/projects/$($project.id)"
-Write-Host "Click History on a document: the Model data column shows the extracted elements."
+Write-Host "Click History on a document for model data and changes, or Dependencies for the graph."

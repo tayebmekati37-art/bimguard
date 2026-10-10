@@ -162,3 +162,38 @@ export const listChanges = (
   comparisonId: string, p: { change_type?: string; severity?: string; q?: string; limit?: number; offset?: number },
 ) => request<Page<ChangeRecord>>(`/comparisons/${comparisonId}/changes${qs(p)}`);
 export const getPlan = (comparisonId: string) => request<PlanData>(`/comparisons/${comparisonId}/footprints`);
+
+export type RelationshipType = "depends_on" | "affects" | "references" | "generated_from" | "derived_from"
+  | "spatially_related_to" | "quantity_based_on" | "validation_source" | "approval_dependency";
+export interface DependencyRecord {
+  id: string; project_id: string; source_document_id: string; source_number: string; source_name: string;
+  target_document_id: string; target_number: string; target_name: string; relationship_type: RelationshipType;
+  flow: "target_to_source" | "source_to_target" | "both"; provider_document_id: string | null;
+  provider_number: string | null; provider_current_revision: number | null; confidence: number; strength: number;
+  reason: string; validated_against_revision: number | null; validated_at: string | null;
+  validated_by_name: string; is_stale: boolean; created_by_name: string; created_at: string;
+}
+export interface GraphNode {
+  id: string; document_number: string; name: string; discipline: Discipline; status: RevisionStatus;
+  current_revision_number: number | null;
+}
+export interface GraphData { nodes: GraphNode[]; edges: DependencyRecord[]; cycles: string[][]; stale_count: number }
+export interface ImpactItem {
+  document_id: string; document_number: string; name: string; discipline: Discipline;
+  current_revision_number: number | null; distance: number; direct: boolean; strength: number;
+  path: { edge_id: string; from_number: string; to_number: string; relationship_type: RelationshipType; strength: number; reason: string }[];
+}
+export interface ImpactData {
+  root_document_id: string; root_document_number: string; direction: string; radius: number; items: ImpactItem[];
+}
+
+export const getGraph = (projectId: string) => request<GraphData>(`/projects/${projectId}/graph`);
+export const createDependency = (b: {
+  source_document_id: string; target_document_id: string; relationship_type: RelationshipType;
+  confidence: number; reason: string;
+}) => request<DependencyRecord>("/dependencies", jsonInit("POST", b));
+export const deleteDependency = (id: string) => request<void>(`/dependencies/${id}`, { method: "DELETE" });
+export const validateDependency = (id: string) =>
+  request<DependencyRecord>(`/dependencies/${id}/validate`, { method: "POST" });
+export const getImpact = (documentId: string, direction: "downstream" | "upstream") =>
+  request<ImpactData>(`/documents/${documentId}/impact${qs({ direction })}`);

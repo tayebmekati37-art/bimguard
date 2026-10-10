@@ -252,16 +252,17 @@ function ProjectView() {
           <p className="mt-1 text-sm text-muted">{project.client || "No client set"} · {project.document_count} documents · Updated {formatDate(project.updated_at)}</p>
           {project.description && <p className="mt-3 max-w-2xl text-sm">{project.description}</p>}
         </div>
-        {canManage && (
-          <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 gap-2">
+          <Link href={`/projects/${project.id}/dependencies`} className={`${btnSecondary} inline-block`}>Dependencies</Link>
+          {canManage && (<>
             <button className={btnSecondary} onClick={() => setDialog({ kind: "edit" })}>Edit</button>
             <button className={btnSecondary} disabled={archive.busy}
                     onClick={() => archive.run(async () => { await updateProject(project.id, { status: archived ? "active" : "archived" }); refresh(); })}>
               {archived ? "Restore" : "Archive"}
             </button>
             {can.deleteProjects(user.role) && <button className={btnSecondary} onClick={() => setDialog({ kind: "delete" })}>Delete</button>}
-          </div>
-        )}
+          </>)}
+        </div>
       </div>
       <ErrorNote message={archive.error} />
       {archived && <p className="mt-4 rounded border border-line bg-white px-3 py-2 text-sm">This project is archived. Restore it to add documents or upload revisions.</p>}
