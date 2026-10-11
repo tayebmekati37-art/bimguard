@@ -1,0 +1,144 @@
+{
+  "schema": "bimguard.elements/1",
+  "model": {
+    "name": "Q-101 Quantity take-off, Level 02",
+    "source_documents": [
+      {
+        "document": "A-101",
+        "revision": 13
+      }
+    ],
+    "note": "Simulated sample data"
+  },
+  "elements": [
+    {
+      "id": "QTO-WALL-LEN-EXT",
+      "class": "QuantityItem",
+      "name": "Exterior wall length",
+      "level": "L02",
+      "room": null,
+      "properties": {
+        "Quantity": 92.0,
+        "Unit": "m",
+        "SourceDocument": "A-101",
+        "SourceRevision": 13,
+        "BasedOn": [
+          "W-101",
+          "W-102",
+          "W-103",
+          "W-104"
+        ]
+      },
+      "geometry": {}
+    },
+    {
+      "id": "QTO-WALL-AREA",
+      "class": "QuantityItem",
+      "name": "Total net wall side area",
+      "level": "L02",
+      "room": null,
+      "properties": {
+        "Quantity": 600.0,
+        "Unit": "m2",
+        "SourceDocument": "A-101",
+        "SourceRevision": 13,
+        "BasedOn": [
+          "W-101",
+          "W-102",
+          "W-103",
+          "W-104",
+          "W-203",
+          "W-204",
+          "W-205",
+          "W-206",
+          "W-207"
+        ]
+      },
+      "geometry": {}
+    },
+    {
+      "id": "QTO-WALL-VOL",
+      "class": "QuantityItem",
+      "name": "Total wall volume",
+      "level": "L02",
+      "room": null,
+      "properties": {
+        "Quantity": 156.8,
+        "Unit": "m3",
+        "SourceDocument": "A-101",
+        "SourceRevision": 13,
+        "BasedOn": [
+          "W-101",
+          "W-102",
+          "W-103",
+          "W-104",
+          "W-203",
+          "W-204",
+          "W-205",
+          "W-206",
+          "W-207"
+        ]
+      },
+      "geometry": {}
+    },
+    {
+      "id": "QTO-DOOR-COUNT",
+      "class": "QuantityItem",
+      "name": "Door count",
+      "level": "L02",
+      "room": null,
+      "properties": {
+        "Quantity": 5,
+        "Unit": "no",
+        "SourceDocument": "A-101",
+        "SourceRevision": 13,
+        "BasedOn": [
+          "D-101",
+          "D-204A",
+          "D-203A",
+          "D-201A",
+          "D-202A"
+        ]
+      },
+      "geometry": {}
+    },
+    {
+      "id": "QTO-FLOOR-AREA",
+      "class": "QuantityItem",
+      "name": "Net floor area, Level 02",
+      "level": "L02",
+      "room": null,
+      "properties": {
+        "Quantity": 480.0,
+        "Unit": "m2",
+        "SourceDocument": "A-101",
+        "SourceRevision": 13,
+        "BasedOn": [
+          "201",
+          "202",
+          "203",
+          "204",
+          "205"
+        ]
+      },
+      "geometry": {}
+    },
+    {
+      "id": "QTO-ROOM-204-AREA",
+      "class": "QuantityItem",
+      "name": "Room 204 net floor area",
+      "level": "L02",
+      "room": null,
+      "properties": {
+        "Quantity": 77.6,
+        "Unit": "m2",
+        "SourceDocument": "A-101",
+        "SourceRevision": 13,
+        "BasedOn": [
+          "204"
+        ]
+      },
+      "geometry": {}
+    }
+  ]
+}

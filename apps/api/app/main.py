@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401  (register tables)
-from app.api import audit, auth, bim, comparisons, dependencies, documents, impact, projects
+from app.api import audit, auth, bim, comparisons, dependencies, documents, impact, projects, rules, validation
 from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.models.document import ImmutableRevisionError
@@ -37,7 +37,7 @@ async def lifespan(_app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="BIMGuard API", version="0.6.0", lifespan=lifespan,
+    app = FastAPI(title="BIMGuard API", version="0.7.0", lifespan=lifespan,
                   description="BIM change-impact and information-consistency engine (prototype).")
 
     app.add_middleware(
@@ -68,7 +68,7 @@ def create_app() -> FastAPI:
     def health() -> dict:
         return {"status": "ok"}
 
-    for router in (auth.router, projects.router, documents.router, bim.router, comparisons.router, dependencies.router, impact.router, audit.router):
+    for router in (auth.router, projects.router, documents.router, bim.router, comparisons.router, dependencies.router, impact.router, validation.router, rules.router, audit.router):
         app.include_router(router)
     return app
 

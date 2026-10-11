@@ -38,6 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav className="flex items-center gap-6">
           <Link href="/projects" className="font-semibold">BIMGuard</Link>
           <Link href="/projects" className="text-sm text-muted hover:text-ink">Projects</Link>
+          <Link href="/rules" className="text-sm text-muted hover:text-ink">Rules</Link>
         </nav>
         <div className="flex items-center gap-4 text-sm">
           <span>{user.full_name} <span className="text-muted">({ROLE_LABELS[user.role]})</span></span>

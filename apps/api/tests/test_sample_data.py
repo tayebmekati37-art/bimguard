@@ -98,8 +98,18 @@ def test_guids_are_stable_between_revisions():
 
 
 def test_json_models_follow_schema():
-    for name in ("quantity_v1.json", "equipment_v1.json"):
+    for name in ("quantity_v1.json", "quantity_v2.json", "equipment_v1.json"):
         doc = json.loads((JSON_DIR / name).read_text("utf-8"))
         assert doc["schema"] == "bimguard.elements/1"
         assert len({e["id"] for e in doc["elements"]}) == len(doc["elements"])
         assert all(e["id"] and e["class"] for e in doc["elements"])
+
+
+def test_quantity_v2_matches_architecture_v2():
+    def items(name):
+        return {e["id"]: e for e in json.loads((JSON_DIR / name).read_text("utf-8"))["elements"]}
+    v1, v2 = items("quantity_v1.json"), items("quantity_v2.json")
+    assert v1["QTO-ROOM-204-AREA"]["properties"]["Quantity"] == 80.0 and v2["QTO-ROOM-204-AREA"]["properties"]["Quantity"] == 77.6
+    assert "W-207" not in v1["QTO-WALL-AREA"]["properties"]["BasedOn"] and "W-207" in v2["QTO-WALL-AREA"]["properties"]["BasedOn"]
+    assert v2["QTO-WALL-AREA"]["properties"]["SourceRevision"] == 13 and v1["QTO-WALL-AREA"]["properties"]["SourceRevision"] == 12
+    assert v2["QTO-FLOOR-AREA"]["properties"]["Quantity"] == 480.0

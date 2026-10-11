@@ -333,17 +333,18 @@ def mep():
 
 
 # ------------------------------------------------------------------ JSON models
-def json_models():
-    rooms, walls = architecture(1)
+def json_models(version: int = 1):
+    rooms, walls = architecture(version)
     wall_els = [e for e in walls if e.cls == "IFCWALL"]
     door_els = [e for e in walls if e.cls == "IFCDOOR"]
     ext = [e for e in wall_els if e.psets["Pset_WallCommon"]["IsExternal"]]
-    src = {"document": "A-101", "revision": 12}
+    revision = 12 if version == 1 else 13
+    src = {"document": "A-101", "revision": revision}
 
     def item(id_, name, value, unit, based_on):
         return {"id": id_, "class": "QuantityItem", "name": name, "level": "L02", "room": None,
                 "properties": {"Quantity": round(value, 3), "Unit": unit, "SourceDocument": "A-101",
-                               "SourceRevision": 12, "BasedOn": based_on}, "geometry": {}}
+                               "SourceRevision": revision, "BasedOn": based_on}, "geometry": {}}
 
     qto = {
         "schema": "bimguard.elements/1",
@@ -397,6 +398,7 @@ def main() -> None:
     rooms, els = mep()
     (IFC_DIR / "mep_v1.ifc").write_text(build_ifc("mep_v1.ifc", rooms, els), "utf-8", newline="\n")
     qto, equipment = json_models()
+    (JSON_DIR / "quantity_v2.json").write_text(json.dumps(json_models(2)[0], indent=2) + "\n", "utf-8", newline="\n")
     (JSON_DIR / "quantity_v1.json").write_text(json.dumps(qto, indent=2) + "\n", "utf-8", newline="\n")
     (JSON_DIR / "equipment_v1.json").write_text(json.dumps(equipment, indent=2) + "\n", "utf-8", newline="\n")
     print("Sample data written to", IFC_DIR.parent)

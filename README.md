@@ -1,6 +1,6 @@
 # BIMGuard — BIM Change Impact & Information Consistency Engine
 Prototype. Version control tells you what changed. BIMGuard tells you what that change could affect.
-Status: Milestone 6 (scored, explained impact analysis).
+Status: Milestone 7 (release-readiness validation and configurable rules).
 
 ## Run (PowerShell)
     Copy-Item .env.example .env

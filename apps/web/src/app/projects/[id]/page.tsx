@@ -253,6 +253,7 @@ function ProjectView() {
           {project.description && <p className="mt-3 max-w-2xl text-sm">{project.description}</p>}
         </div>
         <div className="flex shrink-0 gap-2">
+          <Link href={`/projects/${project.id}/validation`} className={`${btnPrimary} inline-block`}>Validate for issue</Link>
           <Link href={`/projects/${project.id}/impact`} className={`${btnSecondary} inline-block`}>Impact</Link>
           <Link href={`/projects/${project.id}/dependencies`} className={`${btnSecondary} inline-block`}>Dependencies</Link>
           {canManage && (<>

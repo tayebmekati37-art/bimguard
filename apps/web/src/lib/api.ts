@@ -228,3 +228,36 @@ export const getProjectImpact = (projectId: string, p: { severity?: string; stat
   request<ProjectImpact>(`/projects/${projectId}/impact-analysis${qs(p)}`);
 export const runImpactAnalysis = (projectId: string) =>
   request<ProjectImpact>(`/projects/${projectId}/impact-analysis`, { method: "POST" });
+
+export interface RuleRecord {
+  rule_id: string; name: string; description: string; category: string; enabled: boolean; severity: string;
+  params: Record<string, unknown>; default_enabled: boolean; default_severity: string;
+  default_params: Record<string, unknown>; is_default: boolean; configurable_severity: boolean; can_disable: boolean;
+  updated_at: string; updated_by_name: string;
+}
+export type ReadinessStatus = "BLOCKED" | "READY_WITH_WARNINGS" | "READY";
+export interface ValidationRun {
+  id: string; project_id: string; created_at: string; created_by_name: string; status: ReadinessStatus;
+  duration_ms: number; rules_snapshot: Record<string, unknown>;
+  summary: { documents_checked?: number; total?: number; open?: number; acknowledged?: number; blocking?: number;
+             blocking_severity?: string; open_by_severity?: Record<string, number>; by_rule?: Record<string, number> };
+}
+export interface ValidationIssue {
+  id: string; run_id: string; rule_id: string; rule_name: string; category: string; severity: string;
+  document_id: string | null; document_number: string; element_tag: string; title: string; message: string;
+  recommended_action: string; details: Record<string, unknown>; status: "open" | "acknowledged";
+  acknowledged_by_name: string; acknowledged_at: string | null; acknowledgement_note: string;
+}
+
+export const listRules = () => request<RuleRecord[]>("/rules");
+export const updateRule = (id: string, b: { enabled?: boolean; severity?: string; params?: Record<string, unknown> }) =>
+  request<RuleRecord>(`/rules/${id}`, jsonInit("PATCH", b));
+export const resetRule = (id: string) => request<RuleRecord>(`/rules/${id}/reset`, { method: "POST" });
+export const getLatestRun = (projectId: string) => request<ValidationRun>(`/projects/${projectId}/validation-runs/latest`);
+export const runValidation = (projectId: string) => request<ValidationRun>(`/projects/${projectId}/validate`, { method: "POST" });
+export const listIssues = (runId: string, p: { severity?: string; status?: string; limit?: number; offset?: number }) =>
+  request<Page<ValidationIssue>>(`/validation-runs/${runId}/issues${qs(p)}`);
+export const acknowledgeIssue = (id: string, note: string) =>
+  request<ValidationIssue>(`/issues/${id}/acknowledge`, jsonInit("POST", { note }));
+export const revokeAcknowledgement = (id: string) =>
+  request<ValidationIssue>(`/issues/${id}/acknowledge`, { method: "DELETE" });
