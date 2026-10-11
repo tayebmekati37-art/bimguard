@@ -12,7 +12,7 @@ from app.models.bim import BimElement
 from app.models.comparison import DetectedChange, RevisionComparison
 from app.models.document import DocumentRevision
 from app.models.user import User
-from app.services import audit
+from app.services import audit, impact
 
 CHUNK = 500
 
@@ -100,4 +100,5 @@ def compare_revisions(db: Session, old: DocumentRevision, new: DocumentRevision,
         detail={"document_number": new.document.document_number, "from": old.revision_number,
                 "to": new.revision_number, "changes": len(changes), **comparison.counts["by_severity"]})
     db.commit()
+    impact.safe_analyze(db, comparison, user)
     return comparison

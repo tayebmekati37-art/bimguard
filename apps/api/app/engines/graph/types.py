@@ -113,6 +113,7 @@ class PathStep:
     relationship_type: RelationshipType
     strength: float
     reason: str
+    confidence: float = 1.0
 
 
 @dataclass(frozen=True)

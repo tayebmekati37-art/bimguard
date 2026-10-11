@@ -50,7 +50,7 @@ def test_json_provider_reads_sample_models():
     info = provider.import_model(JSON_DIR / "equipment_v1.json")
     assert info.schema == "bimguard.elements/1" and info.element_count == 3
     swg = provider.get_element("SWG-040")
-    assert swg.room == "204" and swg.geometry["location"][0] == 11000
+    assert swg.room == "204" and swg.geometry["location"][0] == 12000
 
 
 @pytest.mark.parametrize("content,message", [

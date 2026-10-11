@@ -15,7 +15,7 @@ from app.schemas.dependency import (
     DependencyCreate, DependencyOut, DependencyUpdate, GraphNode, GraphOut, ImpactItem, ImpactOut, PathStepOut,
     ValidateRequest,
 )
-from app.services import audit
+from app.services import audit, impact
 from app.services import dependencies as service
 
 router = APIRouter(tags=["dependencies"])
@@ -43,7 +43,9 @@ def _ensure_active(db: Session, dependency: Dependency) -> None:
 
 @router.post("/dependencies", response_model=DependencyOut, status_code=201)
 def create_dependency(body: DependencyCreate, db: Session = Depends(get_db), user: User = Depends(can_edit)):
-    return _out(db, service.create_dependency(db, user, body))
+    dependency = service.create_dependency(db, user, body)
+    impact.safe_reanalyze(db, dependency.project_id, user)
+    return _out(db, dependency)
 
 
 @router.get("/projects/{project_id}/dependencies", response_model=Page[DependencyOut])
@@ -88,6 +90,7 @@ def update_dependency(dependency_id: str, body: DependencyUpdate, db: Session = 
         audit.record(db, user=user, action="dependency.updated", entity_type="dependency", entity_id=dependency.id,
                      project_id=dependency.project_id, detail=changes)
         db.commit()
+        impact.safe_reanalyze(db, dependency.project_id, user)
     return _out(db, dependency)
 
 
@@ -101,8 +104,10 @@ def delete_dependency(dependency_id: str, db: Session = Depends(get_db), user: U
                  detail={"source": documents[dependency.source_document_id].document_number,
                          "target": documents[dependency.target_document_id].document_number,
                          "type": dependency.relationship_type})
+    project_id = dependency.project_id
     db.delete(dependency)
     db.commit()
+    impact.safe_reanalyze(db, project_id, user)
 
 
 @router.post("/dependencies/{dependency_id}/validate", response_model=DependencyOut)

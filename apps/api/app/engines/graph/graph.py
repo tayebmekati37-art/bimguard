@@ -80,7 +80,7 @@ class DependencyGraph:
                         continue  # reached at a shallower depth (or it is the root): never revisit
                     strength = base_strength * edge.strength(self.config)
                     step = PathStep(edge.id, node, neighbour, edge.relationship_type,
-                                    edge.strength(self.config), edge.reason)
+                                    edge.strength(self.config), edge.reason, edge.confidence)
                     candidate = (strength, base_path + (step,))
                     current = found.get(neighbour)
                     if current is None or self._better(candidate, current):

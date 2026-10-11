@@ -310,24 +310,24 @@ def mep():
     rooms = [v1_rooms["204"], v1_rooms["205"]]
     els = [
         El(key="ahu-301", cls="IFCUNITARYEQUIPMENT", name="Air handling unit AHU-301", tag="AHU-301",
-           x=10500, y=1000, length=2400, width=1500, height=2200, container="204", material="Galvanised steel",
+           x=11800, y=1000, length=2400, width=1500, height=2200, container="204", material="Galvanised steel",
            psets={"Mep_Design": {"SystemName": "SA-301", "NominalAirflowM3h": 12000.0, "ServiceZone": "204"}},
            qto_name="Qto_UnitaryEquipmentQuantities", qto=box_qto(2400, 1500, 2200)),
-        El(key="duct-301-A", cls="IFCDUCTSEGMENT", name="Supply duct DUCT-301-A", tag="DUCT-301-A", x=12900,
-           y=1750, z=2800, length=7600, width=600, height=400, center_x=True, container="204",
+        El(key="duct-301-A", cls="IFCDUCTSEGMENT", name="Supply duct DUCT-301-A", tag="DUCT-301-A", x=13000,
+           y=1750, z=2800, length=7500, width=600, height=400, center_x=True, container="204",
            material="Galvanised steel",
            psets={"Mep_Design": {"SystemName": "SA-301", "NominalAirflowM3h": 12000.0}},
-           qto_name="Qto_DuctSegmentBaseQuantities", qto=box_qto(7600, 600, 400)),
+           qto_name="Qto_DuctSegmentBaseQuantities", qto=box_qto(7500, 600, 400)),
         El(key="duct-301-B", cls="IFCDUCTSEGMENT", name="Supply duct DUCT-301-B", tag="DUCT-301-B", x=20500,
            y=1750, z=2800, length=5000, width=600, height=400, center_x=True, container="205",
            material="Galvanised steel",
            psets={"Mep_Design": {"SystemName": "SA-301", "NominalAirflowM3h": 6000.0}},
            qto_name="Qto_DuctSegmentBaseQuantities", qto=box_qto(5000, 600, 400)),
-        El(key="duct-301-C", cls="IFCDUCTSEGMENT", name="Return duct DUCT-301-C", tag="DUCT-301-C", x=12900,
-           y=2900, z=2800, length=7600, width=500, height=400, center_x=True, container="204",
+        El(key="duct-301-C", cls="IFCDUCTSEGMENT", name="Return duct DUCT-301-C", tag="DUCT-301-C", x=13000,
+           y=2900, z=2800, length=7500, width=500, height=400, center_x=True, container="204",
            material="Galvanised steel",
            psets={"Mep_Design": {"SystemName": "RA-301", "NominalAirflowM3h": 11000.0}},
-           qto_name="Qto_DuctSegmentBaseQuantities", qto=box_qto(7600, 500, 400)),
+           qto_name="Qto_DuctSegmentBaseQuantities", qto=box_qto(7500, 500, 400)),
     ]
     return rooms, els
 
@@ -379,7 +379,7 @@ def json_models():
                   {"Length": 2600, "Width": 1400, "Height": 1900}, {"PowerKW": 55.0, "Manufacturer": "Generic"}),
             equip("RCV-021", "Air receiver RCV-021", 27000, 6200, "205",
                   {"Length": 1200, "Width": 1200, "Height": 2400}, {"VolumeLitres": 1000.0}),
-            equip("SWG-040", "Switchgear SWG-040", 11000, 6500, "204",
+            equip("SWG-040", "Switchgear SWG-040", 12000, 6500, "204",
                   {"Length": 2000, "Width": 800, "Height": 2200}, {"PowerKW": 0.0, "Voltage": "400V"}),
         ],
     }

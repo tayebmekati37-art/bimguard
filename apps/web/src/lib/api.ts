@@ -197,3 +197,34 @@ export const validateDependency = (id: string) =>
   request<DependencyRecord>(`/dependencies/${id}/validate`, { method: "POST" });
 export const getImpact = (documentId: string, direction: "downstream" | "upstream") =>
   request<ImpactData>(`/documents/${documentId}/impact${qs({ direction })}`);
+
+export interface ImpactFactor { key: string; label: string; value: number; explanation: string }
+export interface ImpactPathStep {
+  edge_id: string; from_number: string; to_number: string; relationship_type: RelationshipType;
+  strength: number; confidence: number; reason: string;
+}
+export interface AffectedElement {
+  guid: string; tag: string; name: string; ifc_class: string; room: string | null; kinds: string[];
+  reasons: string[]; distance_mm: number | null;
+}
+export interface ImpactEvent {
+  id: string; analysis_id: string; changed_document_id: string; changed_document_number: string;
+  changed_revision_number: number; impacted_document_id: string; impacted_document_number: string;
+  impacted_name: string; impacted_discipline: Discipline; impacted_status: RevisionStatus; distance: number;
+  direct: boolean; score: number; severity: string; confidence: number; state: "open" | "reviewed" | "advisory";
+  reason: string; formula: string; factors: ImpactFactor[]; path: ImpactPathStep[]; affected_elements: AffectedElement[];
+  affected_element_count: number; note: string; first_edge_id: string | null;
+  dependency_validated_against: number | null; validated_by_name: string; validated_at: string | null; created_at: string;
+}
+export interface ProjectImpact {
+  analyses: { id: string; changed_document_id: string; changed_document_number: string; changed_revision_number: number;
+              created_at: string; summary: { total?: number; changes?: number; radius?: number; by_severity?: Record<string, number> };
+              config: Record<string, unknown> }[];
+  counts: { total: number; open: number; reviewed: number; advisory: number; open_by_severity: Record<string, number> };
+  events: Page<ImpactEvent>;
+}
+
+export const getProjectImpact = (projectId: string, p: { severity?: string; state?: string; limit?: number; offset?: number }) =>
+  request<ProjectImpact>(`/projects/${projectId}/impact-analysis${qs(p)}`);
+export const runImpactAnalysis = (projectId: string) =>
+  request<ProjectImpact>(`/projects/${projectId}/impact-analysis`, { method: "POST" });
