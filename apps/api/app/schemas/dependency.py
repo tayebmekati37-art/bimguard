@@ -57,6 +57,8 @@ class GraphNode(BaseModel):
     discipline: str
     status: str
     current_revision_number: int | None
+    health: str = "healthy"
+    health_reasons: list[str] = []
 
 
 class GraphOut(BaseModel):

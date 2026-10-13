@@ -103,7 +103,8 @@ export const updateProject = (id: string, b: Partial<Pick<Project, "name" | "cli
 export const deleteProject = (id: string) => request<void>(`/projects/${id}`, { method: "DELETE" });
 
 export const listDocuments = (
-  projectId: string, p: { discipline?: string; status?: string; q?: string; limit?: number; offset?: number },
+  projectId: string,
+  p: { discipline?: string; status?: string; q?: string; file_type?: string; revision?: string; modified_since?: string; limit?: number; offset?: number },
 ) => request<Page<DocumentRecord>>(`/projects/${projectId}/documents${qs(p)}`);
 export const createDocument = (
   projectId: string, b: { document_number: string; name: string; discipline: Discipline; author?: string },
@@ -173,9 +174,10 @@ export interface DependencyRecord {
   reason: string; validated_against_revision: number | null; validated_at: string | null;
   validated_by_name: string; is_stale: boolean; created_by_name: string; created_at: string;
 }
+export type HealthState = "healthy" | "warning" | "stale" | "critical";
 export interface GraphNode {
   id: string; document_number: string; name: string; discipline: Discipline; status: RevisionStatus;
-  current_revision_number: number | null;
+  current_revision_number: number | null; health: HealthState; health_reasons: string[];
 }
 export interface GraphData { nodes: GraphNode[]; edges: DependencyRecord[]; cycles: string[][]; stale_count: number }
 export interface ImpactItem {
@@ -261,3 +263,51 @@ export const acknowledgeIssue = (id: string, note: string) =>
   request<ValidationIssue>(`/issues/${id}/acknowledge`, jsonInit("POST", { note }));
 export const revokeAcknowledgement = (id: string) =>
   request<ValidationIssue>(`/issues/${id}/acknowledge`, { method: "DELETE" });
+
+export interface ValidationHealth {
+  run_id: string; status: "BLOCKED" | "READY_WITH_WARNINGS" | "READY"; created_at: string; open: number; blocking: number;
+  acknowledged: number; open_by_severity: Record<string, number>; outdated: boolean;
+}
+export interface ProjectHealth {
+  project_id: string; project_name: string; project_status: string; client: string; documents: number;
+  documents_with_revision: number; disciplines: Record<string, number>; dependencies: number; stale_dependencies: number;
+  open_impacts: { total: number; by_severity: Record<string, number> };
+  document_health: Record<HealthState, number>;
+  documents_health: { document_id: string; document_number: string; name: string; state: HealthState; reasons: string[] }[];
+  validation: ValidationHealth | null;
+  recent_activity: { at: string; user: string; action: string; text: string }[];
+  last_change_at: string | null;
+}
+export interface DashboardProject {
+  project_id: string; project_name: string; client: string; project_status: string; documents: number;
+  stale_dependencies: number; open_impacts: { total: number; by_severity: Record<string, number> };
+  document_health: Record<HealthState, number>; validation: ValidationHealth | null; last_change_at: string | null;
+}
+export interface Dashboard {
+  totals: { projects: number; documents: number; stale_dependencies: number; open_impacts: number; blocked: number;
+            ready: number; not_validated: number; critical_documents: number };
+  projects: DashboardProject[];
+}
+export interface SearchHit {
+  kind: "project" | "document" | "element" | "issue"; id: string; title: string; subtitle: string; project_id: string;
+  project_name: string; document_number: string;
+}
+export interface SearchResults { query: string; projects: SearchHit[]; documents: SearchHit[]; elements: SearchHit[]; issues: SearchHit[] }
+export interface OverviewLink {
+  document_id: string; document_number: string; relationship_type: RelationshipType; current_revision: number | null;
+  validated_against_revision: number | null; stale: boolean;
+}
+export interface DocumentOverview {
+  document: { id: string; project_id: string; document_number: string; name: string; discipline: Discipline; status: RevisionStatus;
+              current_revision_number: number | null; author: string; file_type: string; modified_at: string };
+  health_state: HealthState; health_reasons: string[]; providers: OverviewLink[]; dependents: OverviewLink[];
+  downstream_count: number; radius: number;
+  latest_comparison: { id: string; revision_id: string; from_revision_number: number; to_revision_number: number;
+                       total_changes: number; by_severity: Record<string, number>; by_type: Record<string, number> } | null;
+  open_impacts: { changed_document_number: string; changed_revision_number: number; score: number; severity: string; direct: boolean }[];
+}
+
+export const getProjectHealth = (projectId: string) => request<ProjectHealth>(`/projects/${projectId}/health`);
+export const getDashboard = () => request<Dashboard>("/dashboard");
+export const searchAll = (q: string) => request<SearchResults>(`/search${qs({ q })}`);
+export const getDocumentOverview = (documentId: string) => request<DocumentOverview>(`/documents/${documentId}/overview`);

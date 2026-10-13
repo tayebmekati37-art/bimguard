@@ -1,4 +1,4 @@
-﻿import time
+import time
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -260,5 +260,4 @@ def revoke(db: Session, issue: ValidationIssue, user: User) -> ValidationIssue:
                  project_id=issue.project_id, detail={"rule": issue.rule_id, "document": issue.document_number})
     db.commit()
     return issue
-
 

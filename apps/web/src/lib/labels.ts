@@ -1,4 +1,4 @@
-import type { Discipline, RelationshipType, RevisionStatus, Role } from "./api";
+import type { Discipline, HealthState, RelationshipType, RevisionStatus, Role } from "./api";
 
 export const DISCIPLINES: Record<Discipline, string> = {
   architecture: "Architecture", structure: "Structure", mep: "MEP",
@@ -64,3 +64,19 @@ export function flowSentence(flow: "target_to_source" | "source_to_target" | "bo
   if (flow === "source_to_target") return `A change to ${source} can outdate ${target}.`;
   return `A change to either ${source} or ${target} can affect the other.`;
 }
+
+export const HEALTH: Record<HealthState, { label: string; hex: string; cls: string; text: string }> = {
+  healthy: { label: "Healthy", hex: "#2E7D4F", cls: "border-status-ok text-status-ok", text: "Up to date, nothing open." },
+  warning: { label: "Warning", hex: "#B7791F", cls: "border-status-warn text-status-warn", text: "Something is open or not yet approved." },
+  stale: { label: "Stale", hex: "#C2571A", cls: "border-status-stale text-status-stale", text: "Depends on a revision it was not reviewed against." },
+  critical: { label: "Critical", hex: "#B3372F", cls: "border-status-critical bg-status-critical/5 text-status-critical", text: "A significant change reached it and nobody has reviewed it." },
+};
+export const HEALTH_ORDER: HealthState[] = ["critical", "stale", "warning", "healthy"];
+
+export const READINESS: Record<"BLOCKED" | "READY_WITH_WARNINGS" | "READY", { label: string; cls: string }> = {
+  BLOCKED: { label: "Not ready for issue", cls: "border-status-critical bg-status-critical/5 text-status-critical" },
+  READY_WITH_WARNINGS: { label: "Ready, with warnings", cls: "border-status-warn bg-status-warn/5 text-status-warn" },
+  READY: { label: "Ready for issue", cls: "border-status-ok bg-status-ok/5 text-status-ok" },
+};
+
+export const FILE_TYPES = ["ifc", "json", "pdf", "csv", "xlsx", "dwg", "rvt"];

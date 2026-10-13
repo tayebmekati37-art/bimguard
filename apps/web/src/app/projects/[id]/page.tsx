@@ -5,12 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell, useUser } from "@/components/AppShell";
 import { ElementsDialog } from "@/components/ElementsDialog";
+import { HealthPanel } from "@/components/HealthPanel";
 import { ErrorNote, Field, Modal, Pager, StatusBadge, btnDanger, btnPrimary, btnSecondary, inputCls, useDebounced } from "@/components/ui";
 import {
-  createDocument, deleteProject, downloadRevision, getProject, listDocuments, listRevisions, reextractRevision, setRevisionStatus,
-  updateProject, uploadRevision, type Discipline, type DocumentRecord, type Page, type Project, type Revision, type RevisionStatus,
+  createDocument, deleteProject, downloadRevision, getProject, getProjectHealth, listDocuments, listRevisions, reextractRevision, setRevisionStatus,
+  updateProject, uploadRevision, type Discipline, type DocumentRecord, type Page, type Project, type ProjectHealth, type Revision, type RevisionStatus,
 } from "@/lib/api";
-import { DISCIPLINES, STATUSES, STATUS_TRANSITIONS, can, formatDate, formatSize } from "@/lib/labels";
+import { DISCIPLINES, FILE_TYPES, STATUSES, STATUS_TRANSITIONS, can, formatDate, formatSize } from "@/lib/labels";
 
 const PAGE_SIZE = 25;
 
@@ -218,6 +219,10 @@ function ProjectView() {
   const [search, setSearch] = useState("");
   const [discipline, setDiscipline] = useState("");
   const [status, setStatus] = useState("");
+  const [fileType, setFileType] = useState("");
+  const [revisionFilter, setRevisionFilter] = useState("");
+  const [since, setSince] = useState("");
+  const [health, setHealth] = useState<ProjectHealth | null>(null);
   const [offset, setOffset] = useState(0);
   const [dialog, setDialog] = useState<
     | { kind: "edit" | "delete" | "add" }
@@ -226,14 +231,18 @@ function ProjectView() {
   >(null);
   const q = useDebounced(search);
   const archive = useAction();
+  useEffect(() => { const initial = new URLSearchParams(window.location.search).get("q"); if (initial) setSearch(initial); }, []);
 
   const loadProject = useCallback(() => { getProject(id).then(setProject).catch((e) => setError(e.message)); }, [id]);
   const loadDocs = useCallback(() => {
-    listDocuments(id, { discipline, status, q, limit: PAGE_SIZE, offset }).then(setDocs).catch((e) => setError(e.message));
-  }, [id, discipline, status, q, offset]);
+    listDocuments(id, { discipline, status, q, file_type: fileType, revision: revisionFilter, modified_since: since ? `${since}T00:00:00Z` : "", limit: PAGE_SIZE, offset })
+      .then(setDocs).catch((e) => setError(e.message));
+  }, [id, discipline, status, q, fileType, revisionFilter, since, offset]);
+  const loadHealth = useCallback(() => { getProjectHealth(id).then(setHealth).catch(() => setHealth(null)); }, [id]);
   useEffect(loadProject, [loadProject]);
   useEffect(loadDocs, [loadDocs]);
-  const refresh = () => { loadProject(); loadDocs(); };
+  useEffect(loadHealth, [loadHealth]);
+  const refresh = () => { loadProject(); loadDocs(); loadHealth(); };
 
   if (error) return <><Link href="/projects" className="text-sm text-steel hover:underline">Back to projects</Link><ErrorNote message={error} /></>;
   if (!project) return <p className="text-muted">Loading</p>;
@@ -241,7 +250,7 @@ function ProjectView() {
   const archived = project.status === "archived";
   const canManage = can.manageProjects(user.role);
   const canEdit = can.editDocuments(user.role) && !archived;
-  const filtersOn = Boolean(q || discipline || status);
+  const filtersOn = Boolean(q || discipline || status || fileType || revisionFilter || since);
 
   return (
     <>
@@ -269,6 +278,8 @@ function ProjectView() {
       <ErrorNote message={archive.error} />
       {archived && <p className="mt-4 rounded border border-line bg-white px-3 py-2 text-sm">This project is archived. Restore it to add documents or upload revisions.</p>}
 
+      {health && <HealthPanel health={health} />}
+
       <div className="mt-8 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Documents</h2>
         {canEdit && <button className={btnPrimary} onClick={() => setDialog({ kind: "add" })}>Add document</button>}
@@ -286,6 +297,16 @@ function ProjectView() {
           <option value="">All statuses</option>
           {Object.entries(STATUSES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
+        <select aria-label="File type filter" className="rounded border border-line bg-white px-3 py-2 text-sm" value={fileType}
+                onChange={(e) => { setFileType(e.target.value); setOffset(0); }}>
+          <option value="">All file types</option>
+          {FILE_TYPES.map((t) => <option key={t} value={t}>{t.toUpperCase()}</option>)}
+        </select>
+        <input aria-label="Revision filter" placeholder="Revision" inputMode="numeric" pattern="[0-9]*" className="w-24 rounded border border-line bg-white px-3 py-2 text-sm"
+               value={revisionFilter} onChange={(e) => { setRevisionFilter(e.target.value.replace(/\D/g, "")); setOffset(0); }} />
+        <label className="flex items-center gap-2 text-sm text-muted">Modified since
+          <input type="date" aria-label="Modified since" className="rounded border border-line bg-white px-2 py-1.5 text-sm text-ink" value={since}
+                 onChange={(e) => { setSince(e.target.value); setOffset(0); }} /></label>
       </div>
 
       {docs && docs.items.length === 0 && (

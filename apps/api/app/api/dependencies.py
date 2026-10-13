@@ -15,7 +15,7 @@ from app.schemas.dependency import (
     DependencyCreate, DependencyOut, DependencyUpdate, GraphNode, GraphOut, ImpactItem, ImpactOut, PathStepOut,
     ValidateRequest,
 )
-from app.services import audit, impact
+from app.services import audit, health as health_service, impact
 from app.services import dependencies as service
 
 router = APIRouter(tags=["dependencies"])
@@ -143,8 +143,10 @@ def project_graph(project_id: str, db: Session = Depends(get_db), _user: User = 
     get_project_or_404(db, project_id)
     graph, documents, dependencies = service.load_graph(db, project_id)
     edges = [service.to_out(d, documents) for d in dependencies]
+    health = health_service.document_health(db, project_id)
     nodes = [GraphNode(id=d.id, document_number=d.document_number, name=d.name, discipline=d.discipline.value,
-                       status=d.status.value, current_revision_number=d.current_revision_number)
+                       status=d.status.value, current_revision_number=d.current_revision_number,
+                       health=health[d.id].state, health_reasons=health[d.id].reasons)
              for d in sorted(documents.values(), key=lambda d: d.document_number)]
     cycles = sorted(sorted(documents[i].document_number for i in cycle) for cycle in graph.find_cycles())
     return GraphOut(nodes=nodes, edges=edges, cycles=cycles, stale_count=sum(1 for e in edges if e.is_stale))

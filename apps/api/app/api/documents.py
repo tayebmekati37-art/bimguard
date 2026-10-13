@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy import func, select
@@ -58,6 +60,9 @@ def list_documents(
     discipline: Discipline | None = None,
     status_filter: RevisionStatus | None = Query(None, alias="status"),
     q: str | None = Query(None, max_length=100),
+    file_type: str | None = Query(None, max_length=16),
+    revision: int | None = Query(None, ge=1),
+    modified_since: datetime | None = None,
     page: PageParams = Depends(page_params),
     db: Session = Depends(get_db), _user: User = Depends(get_current_user),
 ) -> Page[DocumentOut]:
@@ -67,6 +72,12 @@ def list_documents(
         stmt = stmt.where(Document.discipline == discipline)
     if status_filter:
         stmt = stmt.where(Document.status == status_filter)
+    if file_type:
+        stmt = stmt.where(Document.file_type == file_type.lower().lstrip("."))
+    if revision is not None:
+        stmt = stmt.where(Document.current_revision_number == revision)
+    if modified_since is not None:
+        stmt = stmt.where(Document.modified_at >= modified_since)
     if q:
         like = f"%{q.strip()}%"
         stmt = stmt.where(Document.document_number.ilike(like) | Document.name.ilike(like))
