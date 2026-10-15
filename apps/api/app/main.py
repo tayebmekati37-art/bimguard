@@ -37,7 +37,7 @@ async def lifespan(_app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="BIMGuard API", version="0.8.0", lifespan=lifespan,
+    app = FastAPI(title="BIMGuard API", version="1.0.0", lifespan=lifespan,
                   description="BIM change-impact and information-consistency engine (prototype).")
 
     app.add_middleware(

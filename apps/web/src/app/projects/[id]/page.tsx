@@ -265,6 +265,9 @@ function ProjectView() {
           <Link href={`/projects/${project.id}/validation`} className={`${btnPrimary} inline-block`}>Validate for issue</Link>
           <Link href={`/projects/${project.id}/impact`} className={`${btnSecondary} inline-block`}>Impact</Link>
           <Link href={`/projects/${project.id}/dependencies`} className={`${btnSecondary} inline-block`}>Dependencies</Link>
+          <Link href={`/projects/${project.id}/ask`} className={`${btnSecondary} inline-block`}>Ask</Link>
+          <Link href={`/projects/${project.id}/reports`} className={`${btnSecondary} inline-block`}>Reports</Link>
+          <Link href={`/audit?project=${project.id}`} className={`${btnSecondary} inline-block`}>Audit</Link>
           {canManage && (<>
             <button className={btnSecondary} onClick={() => setDialog({ kind: "edit" })}>Edit</button>
             <button className={btnSecondary} disabled={archive.busy}

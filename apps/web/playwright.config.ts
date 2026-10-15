@@ -13,16 +13,17 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
   outputDir: "test-results",
   use: {
+    launchOptions: { slowMo: 150 },
     baseURL: `http://localhost:${WEB_PORT}`,
-    headless: false,
-    slowMo: 150,
+    headless: process.env.CI === "true",
     viewport: { width: 1400, height: 900 },
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "off",
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    { name: "chromium", use: {
+    launchOptions: { slowMo: 150 }, ...devices["Desktop Chrome"] } },
   ],
   webServer: {
     command: `npx next dev -p ${WEB_PORT}`,

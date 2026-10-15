@@ -34,6 +34,8 @@ function AuditView() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get("project") ?? "";
+    if (fromUrl) setProjectId(fromUrl);
     listProjects({ limit: 100 })
       .then((p) => setProjects(p.items))
       .catch(() => {});

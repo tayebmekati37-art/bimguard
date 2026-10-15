@@ -42,6 +42,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/dashboard" className="text-sm text-muted hover:text-ink">Dashboard</Link>
           <Link href="/projects" className="text-sm text-muted hover:text-ink">Projects</Link>
           <Link href="/rules" className="text-sm text-muted hover:text-ink">Rules</Link>
+          <Link href="/settings" className="text-sm text-muted hover:text-ink">Settings</Link>
           {["admin", "bim_coordinator", "reviewer"].includes(user.role) && (
             <Link href="/audit" className="text-sm text-muted hover:text-ink">Audit</Link>
           )}
