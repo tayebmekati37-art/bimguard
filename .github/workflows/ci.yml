@@ -1,0 +1,183 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: apps/api/pyproject.toml
+
+      - name: Install dependencies
+        working-directory: apps/api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run pytest
+        working-directory: apps/api
+        run: python -m pytest -q --tb=short
+        env:
+          DATABASE_URL: sqlite://
+
+  frontend:
+    name: Frontend typecheck + build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: apps/web
+        run: npx tsc --noEmit
+
+      - name: Build
+        working-directory: apps/web
+        run: npm run build
+
+  e2e:
+    name: Playwright E2E
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: apps/api/pyproject.toml
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install backend
+        working-directory: apps/api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Install frontend
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('apps/web/package-lock.json') }}
+
+      - name: Install Playwright browsers
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+
+      - name: Prepare E2E database
+        working-directory: apps/api
+        run: |
+          rm -f e2e.db
+          DATABASE_URL=sqlite:///./e2e.db alembic upgrade head
+          DATABASE_URL=sqlite:///./e2e.db python -c "
+          from app.db.session import SessionLocal
+          from app.models.user import User, Role
+          from app.core.security import hash_password
+          pw = 'admin-demo-pass'
+          users = [
+              ('admin@example.local', 'Admin', Role.ADMIN),
+              ('coordinator@example.local', 'Coordinator', Role.BIM_COORDINATOR),
+              ('engineer@example.local', 'Engineer', Role.ENGINEER),
+              ('reviewer@example.local', 'Reviewer', Role.REVIEWER),
+              ('viewer@example.local', 'Viewer', Role.VIEWER),
+          ]
+          with SessionLocal() as db:
+              for email, name, role in users:
+                  if not db.query(User).filter(User.email == email).first():
+                      db.add(User(email=email, full_name=name, role=role, password_hash=hash_password(pw)))
+              db.commit()
+          print('seeded')
+          "
+
+      - name: Start backend
+        working-directory: apps/api
+        run: |
+          DATABASE_URL=sqlite:///./e2e.db nohup python -m uvicorn app.main:app --host 127.0.0.1 --port 8001 > /tmp/backend.log 2>&1 &
+          echo $! > /tmp/backend.pid
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8001/health > /dev/null 2>&1; then
+              echo "Backend ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Backend failed to start"
+          cat /tmp/backend.log
+          exit 1
+
+      - name: Run Playwright
+        working-directory: apps/web
+        run: npx playwright test
+        env:
+          CI: "true"
+          E2E_API_URL: http://127.0.0.1:8001
+          E2E_WEB_PORT: "3001"
+
+      - name: Stop backend
+        if: always()
+        run: kill $(cat /tmp/backend.pid) 2>/dev/null || true
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 14
+
+  docker:
+    name: Docker Compose build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare env
+        run: cp .env.example .env 2>/dev/null || true
+
+      - name: Validate compose config
+        run: docker compose config --quiet
+
+      - name: Build images
+        run: docker compose build
