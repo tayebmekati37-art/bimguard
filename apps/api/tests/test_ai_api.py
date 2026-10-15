@@ -120,3 +120,22 @@ def test_ai_status_enabled_when_provider_configured(client, auth):
         assert body["enabled"] is True
     finally:
         app.dependency_overrides.pop(get_ai_provider, None)
+
+
+def test_ai_status_disabled_by_default(client, auth):
+    r = client.get("/ai/status", headers=auth("engineer"))
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["enabled"] is False
+    assert body["model"] is None
+    assert body["hourly_limit"] == 30
+
+
+def test_ai_status_enabled_when_provider_configured(client, auth):
+    app.dependency_overrides[get_ai_provider] = lambda: ScriptedProvider({})
+    try:
+        r = client.get("/ai/status", headers=auth("engineer"))
+        assert r.status_code == 200, r.text
+        assert r.json()["enabled"] is True
+    finally:
+        app.dependency_overrides.pop(get_ai_provider, None)

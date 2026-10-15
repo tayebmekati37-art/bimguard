@@ -1,19 +1,29 @@
 ﻿"use client";
 
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ApiError, askProject, getAiStatus, type AiStatus, type AskResponse } from "@/lib/api";
+import { AppShell } from "@/components/AppShell";
+import { ErrorNote, btnPrimary } from "@/components/ui";
+import {
+  ApiError, askProject, getAiStatus, getProject,
+  type AiStatus, type AskResponse, type Project,
+} from "@/lib/api";
 
-export default function AskPage({ params }: { params: { id: string } }) {
+function AskView() {
+  const { id } = useParams<{ id: string }>();
+  const [project, setProject] = useState<Project | null>(null);
+  const [status, setStatus] = useState<AiStatus | null>(null);
   const [question, setQuestion] = useState("");
   const [aiEnabled, setAiEnabled] = useState(false);
-  const [status, setStatus] = useState<AiStatus | null>(null);
   const [result, setResult] = useState<AskResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    getProject(id).then(setProject).catch(() => {});
     getAiStatus().then(setStatus).catch(() => setStatus(null));
-  }, []);
+  }, [id]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,7 +31,7 @@ export default function AskPage({ params }: { params: { id: string } }) {
     setError(null);
     setResult(null);
     try {
-      const r = await askProject(params.id, question, aiEnabled && !!status?.enabled);
+      const r = await askProject(id, question, aiEnabled && !!status?.enabled);
       setResult(r);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong.");
@@ -31,16 +41,26 @@ export default function AskPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
-      <h1 className="mb-4 text-2xl font-semibold">Ask about this project</h1>
+    <>
+      <Link href={`/projects/${id}`} className="text-sm text-steel hover:underline">
+        Back to {project?.name ?? "project"}
+      </Link>
+      <div className="mt-3">
+        <h1 className="text-2xl font-semibold">Ask about this project</h1>
+        <p className="mt-1 text-sm text-muted">
+          Answers come from the deterministic engine. When AI is enabled, the model only rewords the facts.
+        </p>
+      </div>
 
-      <form onSubmit={submit} className="space-y-3">
+      <ErrorNote message={error} />
+
+      <form onSubmit={submit} className="mt-5 space-y-3 rounded border border-line bg-white p-4">
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           rows={3}
-          placeholder="e.g. what depends on A-101, status of S-201, validation issues"
-          className="w-full rounded border border-neutral-300 p-2"
+          placeholder="e.g. what depends on A-101, status of S-201, validation issues for M-301"
+          className="w-full rounded border border-line bg-paper px-3 py-2 text-sm"
           required
         />
         <label className="flex items-center gap-2 text-sm">
@@ -50,39 +70,36 @@ export default function AskPage({ params }: { params: { id: string } }) {
             disabled={!status?.enabled}
             onChange={(e) => setAiEnabled(e.target.checked)}
           />
-          Use AI to reword the answer
+          <span>Use AI to reword the answer</span>
           {!status?.enabled && (
-            <span className="text-xs text-neutral-500">(AI not configured on the server)</span>
+            <span className="text-xs text-muted">(AI not configured on the server)</span>
           )}
         </label>
-        <button
-          type="submit"
-          disabled={loading || question.trim().length === 0}
-          className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
-        >
+        <button type="submit" className={btnPrimary} disabled={loading || question.trim().length === 0}>
           {loading ? "Asking..." : "Ask"}
         </button>
       </form>
 
-      {error && <p className="mt-4 text-red-600">{error}</p>}
-
       {result && (
-        <section className="mt-6 space-y-2 rounded border border-neutral-200 p-4">
+        <section className="mt-5 rounded border border-line bg-white p-4">
           <div className="flex items-center gap-2">
-            <span className={"rounded px-2 py-0.5 text-xs " +
-              (result.path === "ai" ? "bg-blue-100 text-blue-800" : "bg-neutral-200 text-neutral-700")}>
+            <span className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${result.path === "ai" ? "border-steel text-steel" : "border-line text-muted"}`}>
               {result.path === "ai" ? "AI" : "Template"}
             </span>
-            <span className="text-xs text-neutral-500">{result.question_type}</span>
+            <span className="text-xs text-muted">{result.question_type}</span>
           </div>
-          <p className="whitespace-pre-line">{result.answer}</p>
+          <p className="mt-2 whitespace-pre-line text-sm">{result.answer}</p>
           {result.violations.length > 0 && (
-            <p className="text-xs text-amber-700">
+            <p className="mt-2 text-xs text-status-warn">
               Grounding check failed: {result.violations.join("; ")}
             </p>
           )}
         </section>
       )}
-    </main>
+    </>
   );
+}
+
+export default function AskPage() {
+  return <AppShell><AskView /></AppShell>;
 }

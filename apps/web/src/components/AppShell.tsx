@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 import { ApiError, getMe, tokenStore, type User } from "@/lib/api";
 import { SearchBox } from "@/components/SearchBox";
+import { NotificationBell } from "@/components/NotificationBell";
 import { ROLE_LABELS } from "@/lib/labels";
 
 const UserContext = createContext<User | null>(null);
@@ -41,9 +42,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/dashboard" className="text-sm text-muted hover:text-ink">Dashboard</Link>
           <Link href="/projects" className="text-sm text-muted hover:text-ink">Projects</Link>
           <Link href="/rules" className="text-sm text-muted hover:text-ink">Rules</Link>
+          {["admin", "bim_coordinator", "reviewer"].includes(user.role) && (
+            <Link href="/audit" className="text-sm text-muted hover:text-ink">Audit</Link>
+          )}
         </nav>
         <div className="flex items-center gap-4 text-sm">
           <SearchBox />
+          <NotificationBell />
           <span>{user.full_name} <span className="text-muted">({ROLE_LABELS[user.role]})</span></span>
           <button onClick={signOut} className="rounded border border-line px-3 py-1 hover:bg-paper">Sign out</button>
         </div>

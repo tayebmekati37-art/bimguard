@@ -11,6 +11,7 @@ from app.models.validation import ValidationIssue, ValidationRun
 from app.schemas.common import Page
 from app.schemas.validation import AcknowledgeRequest, IssueOut, RunOut
 from app.services import validation as service
+from app.services import notifications as notification_service
 
 router = APIRouter(tags=["validation"])
 can_validate = require_roles(Role.ADMIN, Role.BIM_COORDINATOR, Role.ENGINEER, Role.REVIEWER)
@@ -46,8 +47,11 @@ def _issue_out(issue: ValidationIssue) -> IssueOut:
 @router.post("/projects/{project_id}/validate", response_model=RunOut, status_code=201)
 def validate_project(project_id: str, db: Session = Depends(get_db), user: User = Depends(can_validate)) -> ValidationRun:
     """Runs every enabled rule against the project and decides whether it is ready for issue."""
-    get_project_or_404(db, project_id)
-    return service.run_validation(db, project_id, user)
+    project = get_project_or_404(db, project_id)
+    run = service.run_validation(db, project_id, user)
+    if run.status == "BLOCKED":
+        notification_service.safe_notify_blocked_run(db, project=project, run=run, actor=user)
+    return run
 
 
 @router.get("/projects/{project_id}/validation-runs", response_model=Page[RunOut])

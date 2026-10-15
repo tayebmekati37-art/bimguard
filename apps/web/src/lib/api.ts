@@ -78,7 +78,7 @@ const jsonInit = (method: string, body: unknown): RequestInit => ({
   method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
 });
 
-const qs = (params: Record<string, string | number | undefined>) => {
+const qs = (params: Record<string, string | number | boolean | undefined>) => {
   const p = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== "") p.set(k, String(v)); });
   const s = p.toString();
@@ -329,3 +329,77 @@ export const askProject = (projectId: string, question: string, aiEnabled: boole
   request<AskResponse>(`/projects/${projectId}/ask`,
     jsonInit("POST", { question, ai_enabled: aiEnabled }));
 export const getAiStatus = () => request<AiStatus>("/ai/status");
+
+
+export interface ReadinessReport {
+  generated_at: string;
+  schema_version: number;
+  project: { id: string; name: string; client: string; status: string };
+  summary: {
+    readiness_status: string;
+    documents: number;
+    documents_with_revision: number;
+    disciplines: Record<string, number>;
+    dependencies: number;
+    stale_dependencies: number;
+    open_impacts: { total: number; by_severity: Record<string, number> };
+    document_health: Record<string, number>;
+    issue_counts: { total: number; open: number; acknowledged: number };
+  };
+  validation: {
+    id: string; created_at: string; created_by_name: string; status: string;
+    duration_ms: number; summary: Record<string, unknown>;
+  } | null;
+  issues: Array<Record<string, unknown>>;
+  documents: Array<Record<string, unknown>>;
+}
+
+export const getReadinessReport = (projectId: string) =>
+  request<ReadinessReport>(`/projects/${projectId}/reports/readiness.json`);
+
+export async function downloadReadinessReport(
+  projectId: string, format: "json" | "csv" | "pdf",
+): Promise<void> {
+  const res = await send(`/projects/${projectId}/reports/readiness.${format}`);
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `readiness-${projectId}.${format}`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export interface NotificationRecord {
+  id: string;
+  kind: string;
+  title: string;
+  body: string;
+  link: string;
+  project_id: string | null;
+  read_at: string | null;
+  created_at: string;
+}
+
+export const listNotifications = (p: { unread_only?: boolean; limit?: number; offset?: number }) =>
+  request<Page<NotificationRecord>>(`/notifications${qs(p)}`);
+export const getUnreadCount = () => request<{ count: number }>("/notifications/unread-count");
+export const markNotificationRead = (id: string) =>
+  request<NotificationRecord>(`/notifications/${id}/read`, { method: "POST" });
+export const markAllNotificationsRead = () =>
+  request<{ count: number }>("/notifications/read-all", { method: "POST" });
+
+export interface AuditLogRecord {
+  id: string;
+  user_id: string | null;
+  user_email: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  project_id: string | null;
+  detail: Record<string, unknown>;
+  created_at: string;
+}
+
+export const listAuditLogs = (p: {
+  project_id?: string; action?: string; limit?: number; offset?: number;
+}) => request<Page<AuditLogRecord>>(`/audit-logs${qs(p)}`);
