@@ -311,3 +311,21 @@ export const getProjectHealth = (projectId: string) => request<ProjectHealth>(`/
 export const getDashboard = () => request<Dashboard>("/dashboard");
 export const searchAll = (q: string) => request<SearchResults>(`/search${qs({ q })}`);
 export const getDocumentOverview = (documentId: string) => request<DocumentOverview>(`/documents/${documentId}/overview`);
+
+
+export interface AskResponse {
+  answer: string;
+  path: "template" | "ai";
+  question_type: string;
+  violations: string[];
+}
+export interface AiStatus {
+  enabled: boolean;
+  model: string | null;
+  hourly_limit: number;
+}
+
+export const askProject = (projectId: string, question: string, aiEnabled: boolean) =>
+  request<AskResponse>(`/projects/${projectId}/ask`,
+    jsonInit("POST", { question, ai_enabled: aiEnabled }));
+export const getAiStatus = () => request<AiStatus>("/ai/status");
