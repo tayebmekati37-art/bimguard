@@ -1,0 +1,53 @@
+# BIMGuard quality profile: Japanese BIM/CIM (illustrative v1)
+#
+# !!! ILLUSTRATIVE ONLY !!!
+# This profile configures BIMGuard's OWN rules for a Japanese construction
+# and civil-engineering workflow. It does NOT claim compliance with any
+# official MLIT BIM/CIM guideline. Every rule id below belongs to BIMGuard,
+# not to MLIT. Verified compliance would require mapping each check to the
+# applicable MLIT guideline, version and clause, and shipping evidence for
+# that mapping. That has not been done here.
+
+schema_version: 1
+id: jp-bimcim-v1
+name: Japanese BIM/CIM Quality Profile (illustrative v1)
+description: >
+  A starting configuration for teams working on Japanese BIM/CIM projects.
+  Tightens document naming, requires fuller document metadata, and raises
+  the severity of stale dependencies to CRITICAL so they block release.
+illustrative: true
+
+rules:
+  NAMING_CONVENTION:
+    enabled: true
+    severity: HIGH
+    params:
+      pattern: "^[A-Z]{2,3}-[A-Z0-9]{3,6}$"
+      check_prefix: true
+      prefixes:
+        architecture: "AR"
+        structure: "ST"
+        mep: "ME"
+        equipment: "EQ"
+        quantity: "QY"
+        general: "GN"
+
+  MISSING_METADATA:
+    enabled: true
+    severity: MEDIUM
+    params:
+      required_fields: ["author", "name", "source_system"]
+
+  APPROVAL_REQUIRED:
+    enabled: true
+    severity: HIGH
+    params:
+      required_status: ["approved", "issued"]
+
+  STALE_DEPENDENCY:
+    enabled: true
+    severity: CRITICAL
+
+  MISSING_DEPENDENCY:
+    enabled: true
+    severity: MEDIUM

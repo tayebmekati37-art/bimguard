@@ -403,3 +403,36 @@ export interface AuditLogRecord {
 export const listAuditLogs = (p: {
   project_id?: string; action?: string; limit?: number; offset?: number;
 }) => request<Page<AuditLogRecord>>(`/audit-logs${qs(p)}`);
+
+export interface ProfileRuleOverride {
+  enabled: boolean | null;
+  severity: string | null;
+  params: Record<string, unknown> | null;
+}
+export interface ProfileSummary {
+  schema_version: number;
+  id: string;
+  name: string;
+  description: string;
+  illustrative: boolean;
+  rule_count: number;
+}
+export interface ProfileDetail extends Omit<ProfileSummary, "rule_count"> {
+  rules: Record<string, ProfileRuleOverride>;
+}
+export interface ProfileActivation {
+  project_id: string;
+  profile_id: string | null;
+  activated_at: string | null;
+  activated_by_name: string | null;
+}
+
+export const listProfiles = () => request<ProfileSummary[]>("/profiles");
+export const getProfile = (id: string) => request<ProfileDetail>(`/profiles/${id}`);
+export const getProjectProfile = (projectId: string) =>
+  request<ProfileActivation>(`/projects/${projectId}/profile`);
+export const activateProjectProfile = (projectId: string, profileId: string) =>
+  request<ProfileActivation>(`/projects/${projectId}/profile`,
+    jsonInit("PUT", { profile_id: profileId }));
+export const deactivateProjectProfile = (projectId: string) =>
+  request<ProfileActivation>(`/projects/${projectId}/profile`, { method: "DELETE" });

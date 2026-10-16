@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401  (register tables)
-from app.api import ai, audit, auth, bim, comparisons, dependencies, documents, impact, insights, notifications, projects, reports, rules, validation
+from app.api import ai, audit, auth, bim, comparisons, dependencies, documents, impact, insights, notifications, profiles, projects, reports, rules, validation
 from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.models.document import ImmutableRevisionError
@@ -68,7 +68,7 @@ def create_app() -> FastAPI:
     def health() -> dict:
         return {"status": "ok"}
 
-    for router in (auth.router, projects.router, documents.router, bim.router, comparisons.router, dependencies.router, impact.router, validation.router, rules.router, insights.router, reports.router, notifications.router, audit.router, ai.router):
+    for router in (auth.router, projects.router, documents.router, bim.router, comparisons.router, dependencies.router, impact.router, validation.router, rules.router, insights.router, reports.router, notifications.router, profiles.router, audit.router, ai.router):
         app.include_router(router)
     return app
 

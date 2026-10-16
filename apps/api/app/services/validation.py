@@ -18,6 +18,8 @@ from app.services import audit
 from app.services import dependencies as dependency_service
 from app.services import impact as impact_service
 from app.engines.validation.definitions import BY_ID
+from app.engines.profiles import registry as profile_registry
+from app.models.profile import ProfileActivation
 
 MAX_ELEMENTS_PER_DOCUMENT = 50000
 
@@ -39,8 +41,37 @@ def ensure_rules(db: Session) -> dict[str, Rule]:
     return rows
 
 
-def rule_configs(db: Session) -> dict[str, RuleConfig]:
-    return {rid: RuleConfig(rid, row.enabled, row.severity, row.params or {}) for rid, row in ensure_rules(db).items()}
+def rule_configs(db: Session, project_id: str | None = None) -> dict[str, RuleConfig]:
+    """Return the effective rule configuration.
+
+    Order of precedence, highest last:
+      1. Factory defaults
+      2. Per-rule database overrides (from the rules page)
+      3. Active profile for the project (if any)
+    """
+    base = {rid: RuleConfig(rid, row.enabled, row.severity, row.params or {})
+            for rid, row in ensure_rules(db).items()}
+    if project_id is None:
+        return base
+    activation = db.scalar(select(ProfileActivation).where(ProfileActivation.project_id == project_id))
+    if activation is None:
+        return base
+    profile = profile_registry.load_by_id(activation.profile_id)
+    if profile is None:
+        # The profile file was removed since activation; fall back silently.
+        return base
+    merged = dict(base)
+    for rule_id, override in profile.rules.items():
+        if rule_id not in merged:
+            continue
+        cfg = merged[rule_id]
+        merged[rule_id] = RuleConfig(
+            rule_id,
+            override.enabled if override.enabled is not None else cfg.enabled,
+            override.severity if override.severity is not None else cfg.severity,
+            override.params if override.params is not None else cfg.params,
+        )
+    return merged
 
 
 def update_rule(db: Session, user: User, rule_id: str, *, enabled: bool | None, severity: str | None,
@@ -187,7 +218,7 @@ def _persist_summary(run: ValidationRun, findings_view: list[tuple[str, str, boo
 
 def run_validation(db: Session, project_id: str, user: User | None) -> ValidationRun:
     started = time.perf_counter()
-    configs = rule_configs(db)
+    configs = rule_configs(db, project_id)
     snapshot = build_snapshot(db, project_id, configs)
     findings = run_rules(snapshot, configs)
     acknowledgements = {a.fingerprint: a for a in db.scalars(

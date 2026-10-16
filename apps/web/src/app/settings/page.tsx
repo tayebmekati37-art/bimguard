@@ -1,4 +1,6 @@
-﻿"use client";
+"use client";
+
+import Link from "next/link";
 
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -16,6 +18,8 @@ function SettingsView() {
   return (
     <>
       <h1 className="text-2xl font-semibold">Settings</h1>
+      <p className="mt-2 text-sm"><Link href="/settings/profiles" className="text-steel hover:underline">Quality profiles</Link> - activate a rule profile for a project.</p>
+      
 
       <section className="mt-5 rounded border border-line bg-white p-4">
         <h2 className="font-medium">AI explanation layer</h2>

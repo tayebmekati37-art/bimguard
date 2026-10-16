@@ -16,6 +16,7 @@ A deterministic engine for BIM projects: detects changes between revisions, foll
 - Computes per-document health (Healthy, Warning, Stale, Critical) with reasons.
 - Optionally rewords the deterministic answer with AI, with a grounding check.
 - Exports a readiness report as JSON, CSV, or PDF.
+- Applies versioned quality profiles to a project's validation rules.
 - Notifies affected users and logs every action.
 
 ## Run it
