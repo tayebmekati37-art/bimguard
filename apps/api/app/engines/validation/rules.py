@@ -304,3 +304,94 @@ CHECKS: dict[str, Callable[[_Context, RuleConfig], list[Finding]]] = {
 }
 
 __all__ = ["CHECKS", "Edge"]
+
+
+# ------------------------------------------------------------------ cross-document element checks
+def _qualifying_pairs(ctx: _Context, rule: RuleConfig):
+    """Yield (provider_doc, consumer_doc, provider_elements, consumer_elements, edge) for each edge
+    whose relationship type is configured and whose both ends have extractable element data."""
+    allowed = set(rule.params.get("relationship_types") or ())
+    for edge in ctx.snapshot.edges:
+        if edge.relationship_type.value not in allowed:
+            continue
+        provider_id, consumer_id = edge.provider, edge.consumer
+        if provider_id is None or consumer_id is None:
+            continue
+        provider_elements = ctx.snapshot.elements_by_document.get(provider_id)
+        consumer_elements = ctx.snapshot.elements_by_document.get(consumer_id)
+        if not provider_elements or not consumer_elements:
+            continue
+        yield ctx.docs[provider_id], ctx.docs[consumer_id], provider_elements, consumer_elements, edge
+
+
+def cross_doc_tag_missing(ctx: _Context, rule: RuleConfig) -> list[Finding]:
+    out: list[Finding] = []
+    for provider, consumer, provider_elems, consumer_elems, edge in _qualifying_pairs(ctx, rule):
+        missing = sorted(set(provider_elems) - set(consumer_elems))
+        for tag in missing:
+            out.append(_finding(
+                rule, consumer,
+                "Element missing from dependent document",
+                f"{tag} is in {provider.number} but not in {consumer.number}.",
+                f"Add {tag} to {consumer.number} or remove it from {provider.number}, then re-upload the corrected document.",
+                subject=f"{edge.id}|{tag}",
+                evidence=f"{provider.number}:{tag}",
+                element_tag=tag,
+                details={"dependency_id": edge.id, "provider": provider.number, "consumer": consumer.number,
+                         "relationship_type": edge.relationship_type.value}))
+    return out
+
+
+def cross_doc_tag_unexpected(ctx: _Context, rule: RuleConfig) -> list[Finding]:
+    out: list[Finding] = []
+    for provider, consumer, provider_elems, consumer_elems, edge in _qualifying_pairs(ctx, rule):
+        unexpected = sorted(set(consumer_elems) - set(provider_elems))
+        for tag in unexpected:
+            out.append(_finding(
+                rule, consumer,
+                "Element not present in provider document",
+                f"{tag} is in {consumer.number} but not in {provider.number}.",
+                f"Confirm {tag} is meant to exist in {consumer.number}, or add it to {provider.number}.",
+                subject=f"{edge.id}|{tag}",
+                evidence=f"{consumer.number}:{tag}",
+                element_tag=tag,
+                details={"dependency_id": edge.id, "provider": provider.number, "consumer": consumer.number,
+                         "relationship_type": edge.relationship_type.value}))
+    return out
+
+
+def cross_doc_property_divergence(ctx: _Context, rule: RuleConfig) -> list[Finding]:
+    compare_fields = rule.params.get("compare") or ()
+    out: list[Finding] = []
+    for provider, consumer, provider_elems, consumer_elems, edge in _qualifying_pairs(ctx, rule):
+        for tag in sorted(set(provider_elems) & set(consumer_elems)):
+            p, c = provider_elems[tag], consumer_elems[tag]
+            diffs: list[tuple[str, object, object]] = []
+            for name in compare_fields:
+                pv = getattr(p, name, None)
+                cv = getattr(c, name, None)
+                if pv is None or cv is None:
+                    continue
+                if pv != cv:
+                    diffs.append((name, pv, cv))
+            if not diffs:
+                continue
+            summary = "; ".join(f"{n}: {provider.number}={pv!r}, {consumer.number}={cv!r}" for n, pv, cv in diffs)
+            evidence = "|".join(f"{n}={pv}/{cv}" for n, pv, cv in diffs)
+            out.append(_finding(
+                rule, consumer,
+                "Element property disagrees across documents",
+                f"{tag} differs between {provider.number} and {consumer.number}: {summary}.",
+                f"Decide which value is correct, update the other document, then re-upload it.",
+                subject=f"{edge.id}|{tag}",
+                evidence=evidence,
+                element_tag=tag,
+                details={"dependency_id": edge.id, "provider": provider.number, "consumer": consumer.number,
+                         "relationship_type": edge.relationship_type.value,
+                         "differences": [{"field": n, "provider": pv, "consumer": cv} for n, pv, cv in diffs]}))
+    return out
+
+# ------------------------------------------------------------------ register cross-document checks
+CHECKS["CROSS_DOC_TAG_MISSING"] = cross_doc_tag_missing
+CHECKS["CROSS_DOC_TAG_UNEXPECTED"] = cross_doc_tag_unexpected
+CHECKS["CROSS_DOC_PROPERTY_DIVERGENCE"] = cross_doc_property_divergence

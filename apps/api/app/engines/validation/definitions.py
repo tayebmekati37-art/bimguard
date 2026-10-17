@@ -123,6 +123,32 @@ def _policy(params: dict) -> None:
         raise ValueError(f"'blocking_severity' must be one of: {', '.join(SEVERITIES)}.")
 
 
+_CROSS_DOC_COMPARE_FIELDS = ("level", "room", "material")
+_CROSS_DOC_DEFAULT_RELATIONSHIPS = (
+    "depends_on", "references", "generated_from", "derived_from", "quantity_based_on",
+)
+
+
+def _cross_doc_relationship_types(params: dict) -> None:
+    _only_keys(params, {"relationship_types"})
+    types_list = params.get("relationship_types")
+    if not isinstance(types_list, list) or not types_list:
+        raise ValueError("'relationship_types' must be a non-empty list of relationship type names.")
+    for item in types_list:
+        if not isinstance(item, str) or not item.strip():
+            raise ValueError("Each entry in 'relationship_types' must be a non-empty string.")
+
+
+def _cross_doc_compare(params: dict) -> None:
+    _only_keys(params, {"relationship_types", "compare"})
+    _cross_doc_relationship_types({"relationship_types": params.get("relationship_types")})
+    compare = params.get("compare")
+    if not isinstance(compare, list) or not compare:
+        raise ValueError(f"'compare' must be a non-empty list of: {', '.join(_CROSS_DOC_COMPARE_FIELDS)}.")
+    for name in compare:
+        if name not in _CROSS_DOC_COMPARE_FIELDS:
+            raise ValueError(f"Unknown comparison field '{name}'. Allowed: {', '.join(_CROSS_DOC_COMPARE_FIELDS)}.")
+
 _VALIDATORS: dict[str, Callable[[dict], None]] = {}
 
 
@@ -181,7 +207,25 @@ RULES: tuple[RuleDefinition, ...] = (
     _rule(RuleDefinition("APPROVAL_REQUIRED", "Approval required",
                          "The current revision must have one of the required statuses before it can be issued.",
                          "approval", "HIGH", default_params={"required_status": ["approved", "issued"]}), _approval),
-    _rule(RuleDefinition("READINESS_POLICY", "Release policy",
+    _rule(RuleDefinition("CROSS_DOC_TAG_MISSING", "Element missing from dependent document",
+                         "An element present in a provider document must also appear in the document that depends on it. "
+                         "Off by default: enable per project through a quality profile.",
+                         "consistency", "MEDIUM", default_enabled=False,
+                         default_params={"relationship_types": list(_CROSS_DOC_DEFAULT_RELATIONSHIPS)}),
+          _cross_doc_relationship_types),
+    _rule(RuleDefinition("CROSS_DOC_PROPERTY_DIVERGENCE", "Element property disagrees across documents",
+                         "An element tag shared between two linked documents must agree on level, room and material. "
+                         "Off by default: enable per project through a quality profile.",
+                         "consistency", "MEDIUM", default_enabled=False,
+                         default_params={"relationship_types": list(_CROSS_DOC_DEFAULT_RELATIONSHIPS),
+                                         "compare": list(_CROSS_DOC_COMPARE_FIELDS)}),
+          _cross_doc_compare),
+    _rule(RuleDefinition("CROSS_DOC_TAG_UNEXPECTED", "Unexpected element in dependent document",
+                         "A dependent document contains a tag the provider document does not have. "
+                         "Off by default: some dependent documents legitimately add elements.",
+                         "consistency", "LOW", default_enabled=False,
+                         default_params={"relationship_types": list(_CROSS_DOC_DEFAULT_RELATIONSHIPS)}),
+          _cross_doc_relationship_types),    _rule(RuleDefinition("READINESS_POLICY", "Release policy",
                          "Open issues at or above this severity block the release. Lower ones are warnings.",
                          "policy", "HIGH", default_params={"blocking_severity": "HIGH"},
                          configurable_severity=False, can_disable=False), _policy),

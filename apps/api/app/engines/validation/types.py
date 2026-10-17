@@ -73,6 +73,22 @@ class ElementReferences:
 
 
 @dataclass(frozen=True)
+class ElementSummary:
+    """The narrow slice of a BimElement that cross-document checks compare.
+
+    Only level, room and material are included. Those are the fields that
+    every IFC extractor reliably populates and that mean the same thing
+    across disciplines. Geometry is deliberately absent: BIMGuard does not
+    tessellate, so comparing shapes here would be inventing evidence.
+    """
+
+    tag: str
+    level: str | None = None
+    room: str | None = None
+    material: str | None = None
+
+
+@dataclass(frozen=True)
 class Snapshot:
     """Everything the rules look at, loaded once. Rules never touch the database."""
 
@@ -82,6 +98,7 @@ class Snapshot:
     references: Mapping[str, tuple[ElementReferences, ...]] = field(default_factory=dict)
     tags: Mapping[str, frozenset[str]] = field(default_factory=dict)
     properties: Mapping[str, Mapping[str, Mapping[str, Any]]] = field(default_factory=dict)
+    elements_by_document: Mapping[str, Mapping[str, ElementSummary]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

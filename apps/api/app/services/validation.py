@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.clock import utcnow
 from app.engines.validation import (
+    ElementSummary,
     AffectedRef, DocumentState, ElementReferences, OpenImpact, RevisionState, RuleConfig, Snapshot, RULES,
     assess, blocking_severity, run_rules, validate_configuration,
 )
@@ -194,8 +195,25 @@ def build_snapshot(db: Session, project_id: str, configs: dict[str, RuleConfig])
                 properties.setdefault(document.id, {})[row.tag] = {
                     p: (row.properties or {}).get(p) for p in tag_map[row.tag] if p in (row.properties or {})}
 
+    cross_doc_rule_ids = ("CROSS_DOC_TAG_MISSING", "CROSS_DOC_PROPERTY_DIVERGENCE", "CROSS_DOC_TAG_UNEXPECTED")
+    elements_by_document: dict[str, dict[str, ElementSummary]] = {}
+    if any(configs[rid].enabled for rid in cross_doc_rule_ids if rid in configs):
+        for doc in by_id.values():
+            revision_id = _current_revision_id(db, doc)
+            if revision_id is None:
+                continue
+            by_tag: dict[str, ElementSummary] = {}
+            for row in db.scalars(select(BimElement).where(BimElement.revision_id == revision_id)):
+                if not row.tag or row.tag in by_tag:
+                    continue
+                by_tag[row.tag] = ElementSummary(
+                    tag=row.tag, level=row.level, room=row.room, material=row.material)
+            if by_tag:
+                elements_by_document[doc.id] = by_tag
+
     return Snapshot(documents=tuple(documents), edges=edges, open_impacts=tuple(_open_impacts(db, project_id)),
-                    references=references, tags=tags, properties=properties)
+                    references=references, tags=tags, properties=properties,
+                    elements_by_document=elements_by_document)
 
 
 # ------------------------------------------------------------------ runs

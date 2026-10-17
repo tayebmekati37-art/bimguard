@@ -112,8 +112,17 @@ def test_an_acknowledgement_only_covers_the_evidence_it_was_given_for(client, au
 
 def test_rules_are_listed_with_their_defaults(client, auth):
     rules = client.get("/rules", headers=auth("viewer")).json()
-    assert len(rules) == 14 and rules[0]["rule_id"] == "MISSING_REVISION"
-    assert all(r["is_default"] and r["enabled"] for r in rules)
+    assert len(rules) == 17 and rules[0]["rule_id"] == "MISSING_REVISION"
+    # Every rule starts at its factory config.
+    assert all(r["is_default"] for r in rules)
+    # Three cross-document rules ship disabled; everything else is on.
+    off_by_default = {"CROSS_DOC_TAG_MISSING", "CROSS_DOC_PROPERTY_DIVERGENCE", "CROSS_DOC_TAG_UNEXPECTED"}
+    by_id = {r["rule_id"]: r for r in rules}
+    for rid in off_by_default:
+        assert by_id[rid]["enabled"] is False, f"{rid} should ship disabled"
+    for r in rules:
+        if r["rule_id"] not in off_by_default:
+            assert r["enabled"] is True, f"{r['rule_id']} should ship enabled"
     policy = next(r for r in rules if r["rule_id"] == "READINESS_POLICY")
     assert policy["params"] == {"blocking_severity": "HIGH"} and not policy["can_disable"] and not policy["configurable_severity"]
     stale = next(r for r in rules if r["rule_id"] == "STALE_DEPENDENCY")
