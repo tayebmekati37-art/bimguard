@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
@@ -17,7 +17,9 @@ from app.schemas.common import Page
 from app.schemas.document import (
     DocumentCreate, DocumentOut, DocumentUpdate, RevisionOut, RevisionStatusUpdate,
 )
+from app.schemas.interop import RoundTripReportOut, SourceVerificationReportOut
 from app.services import audit, extraction, revisions, storage
+from app.services import interop
 
 router = APIRouter(tags=["documents"])
 can_edit = require_roles(Role.ADMIN, Role.BIM_COORDINATOR, Role.ENGINEER)
@@ -165,3 +167,108 @@ def download_revision(
 ) -> FileResponse:
     revision = _revision_or_404(db, revision_id)
     return FileResponse(storage.resolve_stored(revision.file_path), filename=revision.original_filename)
+
+
+# ------------------------------------------------------------------ interoperability
+
+@router.get("/revisions/{revision_id}/elements.json")
+def export_revision_elements(
+    revision_id: str, db: Session = Depends(get_db), _user: User = Depends(get_current_user)
+) -> JSONResponse:
+    """Download the extracted elements of this revision as bimguard.elements/1."""
+    revision = _revision_or_404(db, revision_id)
+    payload = interop.export_revision(db, revision)
+    filename = f"elements-{revision.id}-v{revision.revision_number}.json"
+    return JSONResponse(
+        content=payload,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/revisions/{revision_id}/verify-round-trip", response_model=RoundTripReportOut)
+def verify_round_trip(
+    revision_id: str, db: Session = Depends(get_db), _user: User = Depends(get_current_user)
+) -> RoundTripReportOut:
+    """Export -> re-parse through JsonProvider -> diff. Proves the canonical format is lossless."""
+    revision = _revision_or_404(db, revision_id)
+    report = interop.verify_round_trip(db, revision)
+    return RoundTripReportOut(
+        revision_id=report.revision_id,
+        element_count=report.element_count,
+        matches=report.matches,
+        missing=report.missing,
+        extra=report.extra,
+        mismatches=report.mismatches,
+        ok=report.ok,
+    )
+
+
+@router.post("/revisions/{revision_id}/verify-source", response_model=SourceVerificationReportOut)
+def verify_source(
+    revision_id: str, db: Session = Depends(get_db), _user: User = Depends(get_current_user)
+) -> SourceVerificationReportOut:
+    """Re-read the uploaded file with the appropriate provider and compare GUIDs with the database."""
+    revision = _revision_or_404(db, revision_id)
+    report = interop.verify_source(db, revision)
+    return SourceVerificationReportOut(
+        revision_id=report.revision_id,
+        source_format=report.source_format,
+        ok=report.ok,
+        reason=report.reason,
+        parsed_element_count=report.parsed_element_count,
+        stored_element_count=report.stored_element_count,
+        missing=report.missing,
+        extra=report.extra,
+    )
+
+# ------------------------------------------------------------------ interoperability
+
+@router.get("/revisions/{revision_id}/elements.json")
+def export_revision_elements(
+    revision_id: str, db: Session = Depends(get_db), _user: User = Depends(get_current_user)
+) -> JSONResponse:
+    """Download the extracted elements of this revision as bimguard.elements/1."""
+    revision = _revision_or_404(db, revision_id)
+    payload = interop.export_revision(db, revision)
+    filename = f"elements-{revision.id}-v{revision.revision_number}.json"
+    return JSONResponse(
+        content=payload,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/revisions/{revision_id}/verify-round-trip", response_model=RoundTripReportOut)
+def verify_round_trip(
+    revision_id: str, db: Session = Depends(get_db), _user: User = Depends(get_current_user)
+) -> RoundTripReportOut:
+    """Export -> re-parse through JsonProvider -> diff. Proves the canonical format is lossless."""
+    revision = _revision_or_404(db, revision_id)
+    report = interop.verify_round_trip(db, revision)
+    return RoundTripReportOut(
+        revision_id=report.revision_id,
+        element_count=report.element_count,
+        matches=report.matches,
+        missing=report.missing,
+        extra=report.extra,
+        mismatches=report.mismatches,
+        ok=report.ok,
+    )
+
+
+@router.post("/revisions/{revision_id}/verify-source", response_model=SourceVerificationReportOut)
+def verify_source(
+    revision_id: str, db: Session = Depends(get_db), _user: User = Depends(get_current_user)
+) -> SourceVerificationReportOut:
+    """Re-read the uploaded file with the appropriate provider and compare GUIDs with the database."""
+    revision = _revision_or_404(db, revision_id)
+    report = interop.verify_source(db, revision)
+    return SourceVerificationReportOut(
+        revision_id=report.revision_id,
+        source_format=report.source_format,
+        ok=report.ok,
+        reason=report.reason,
+        parsed_element_count=report.parsed_element_count,
+        stored_element_count=report.stored_element_count,
+        missing=report.missing,
+        extra=report.extra,
+    )
