@@ -1,0 +1,28 @@
+# BIMGuard quality profile: Manufacturing baseline v1
+#
+# ILLUSTRATIVE. This profile configures BIMGuard's own rules for a
+# manufacturing and industrial engineering workflow. It does NOT claim
+# compliance with any specific industry standard (ISO, ASME, DIN, or
+# otherwise). Every rule id below belongs to BIMGuard.
+
+schema_version: 1
+id: mfg-v1
+name: Manufacturing baseline v1
+description: >
+  A starting configuration for manufacturing and industrial engineering
+  projects. Every part must be covered by a specification, test, or work
+  instruction. Stale dependencies become release blockers.
+illustrative: true
+
+rules:
+  PART_COVERAGE:
+    enabled: true
+    severity: HIGH
+
+  STALE_DEPENDENCY:
+    enabled: true
+    severity: CRITICAL
+
+  APPROVAL_REQUIRED:
+    enabled: true
+    severity: HIGH

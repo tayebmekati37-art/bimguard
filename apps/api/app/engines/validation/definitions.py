@@ -23,6 +23,7 @@ class RuleDefinition:
     default_params: dict[str, Any] = field(default_factory=dict)
     configurable_severity: bool = True
     can_disable: bool = True
+    applicable_domains: tuple[str, ...] | None = None  # None = all domains
 
 
 def _check_positive(params: dict, key: str, minimum: float = 0.0) -> None:
@@ -149,6 +150,16 @@ def _cross_doc_compare(params: dict) -> None:
         if name not in _CROSS_DOC_COMPARE_FIELDS:
             raise ValueError(f"Unknown comparison field '{name}'. Allowed: {', '.join(_CROSS_DOC_COMPARE_FIELDS)}.")
 
+def _part_coverage(params: dict) -> None:
+    _only_keys(params, {"required"})
+    required = params.get("required")
+    if not isinstance(required, list) or not required:
+        raise ValueError("'required' must be a non-empty list of relationship type names.")
+    for item in required:
+        if not isinstance(item, str) or not item.strip():
+            raise ValueError("Each entry in 'required' must be a non-empty string.")
+
+
 _VALIDATORS: dict[str, Callable[[dict], None]] = {}
 
 
@@ -170,7 +181,7 @@ RULES: tuple[RuleDefinition, ...] = (
                          "dependency", "HIGH"), _no_params),
     _rule(RuleDefinition("MISSING_DEPENDENCY", "Missing dependency",
                          "Documents of a discipline must depend on the listed discipline when the project has one.",
-                         "dependency", "MEDIUM",
+                         "dependency", "MEDIUM", applicable_domains=("bim",),
                          default_params={"required": [{"discipline": "structure", "on_discipline": "architecture"},
                                                       {"discipline": "mep", "on_discipline": "architecture"},
                                                       {"discipline": "quantity", "on_discipline": "architecture"}]}),
@@ -184,7 +195,8 @@ RULES: tuple[RuleDefinition, ...] = (
           _unreviewed),
     _rule(RuleDefinition("SPATIAL_CONFLICT", "Potential spatial conflict",
                          "An element must keep the clearance from an element that changed in a source document.",
-                         "consistency", "HIGH", default_params={"clearance_mm": 300.0}), _clearance),
+                         "consistency", "HIGH", default_params={"clearance_mm": 300.0},
+                         applicable_domains=("bim",)), _clearance),
     _rule(RuleDefinition("OUTDATED_REFERENCE", "Information based on changed elements",
                          "Elements based on elements that changed in a source document may be outdated.",
                          "consistency", "MEDIUM"), _no_params),
@@ -225,7 +237,14 @@ RULES: tuple[RuleDefinition, ...] = (
                          "Off by default: some dependent documents legitimately add elements.",
                          "consistency", "LOW", default_enabled=False,
                          default_params={"relationship_types": list(_CROSS_DOC_DEFAULT_RELATIONSHIPS)}),
-          _cross_doc_relationship_types),    _rule(RuleDefinition("READINESS_POLICY", "Release policy",
+          _cross_doc_relationship_types),
+    _rule(RuleDefinition("PART_COVERAGE", "Part without supporting documents",
+                         "A manufacturing part must be covered by at least one of the configured supporting documents.",
+                         "dependency", "MEDIUM", default_enabled=False,
+                         applicable_domains=("manufacturing",),
+                         default_params={"required": ["specification_for", "test_for", "work_instruction_for"]}),
+          _part_coverage),
+    _rule(RuleDefinition("READINESS_POLICY", "Release policy",
                          "Open issues at or above this severity block the release. Lower ones are warnings.",
                          "policy", "HIGH", default_params={"blocking_severity": "HIGH"},
                          configurable_severity=False, can_disable=False), _policy),

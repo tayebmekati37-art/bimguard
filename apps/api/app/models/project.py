@@ -18,6 +18,11 @@ class ProjectStatus(str, enum.Enum):
     ARCHIVED = "archived"
 
 
+class ProjectDomain(str, enum.Enum):
+    BIM = "bim"
+    MANUFACTURING = "manufacturing"
+
+
 class Project(Base):
     __tablename__ = "projects"
 
@@ -28,6 +33,10 @@ class Project(Base):
     status: Mapped[ProjectStatus] = mapped_column(
         Enum(ProjectStatus, native_enum=False, length=20, values_callable=lambda e: [m.value for m in e]),
         default=ProjectStatus.ACTIVE, index=True,
+    )
+    domain: Mapped[ProjectDomain] = mapped_column(
+        Enum(ProjectDomain, native_enum=False, length=20, values_callable=lambda e: [m.value for m in e]),
+        default=ProjectDomain.BIM, server_default="bim", index=True,
     )
     created_by_id: Mapped[str | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True

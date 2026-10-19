@@ -395,3 +395,44 @@ def cross_doc_property_divergence(ctx: _Context, rule: RuleConfig) -> list[Findi
 CHECKS["CROSS_DOC_TAG_MISSING"] = cross_doc_tag_missing
 CHECKS["CROSS_DOC_TAG_UNEXPECTED"] = cross_doc_tag_unexpected
 CHECKS["CROSS_DOC_PROPERTY_DIVERGENCE"] = cross_doc_property_divergence
+
+# ------------------------------------------------------------------ manufacturing
+def part_coverage(ctx: _Context, rule: RuleConfig) -> list[Finding]:
+    """Every part (target of any 'part_of' edge) must be covered by at least one supporting document.
+
+    Coverage means a document with a `specification_for`, `test_for`, or
+    `work_instruction_for` relationship whose target is the part. Which
+    relationship types count is configurable.
+    """
+    required = set(rule.params.get("required") or ())
+    if not required:
+        return []
+
+    part_ids: set[str] = set()
+    for edge in ctx.snapshot.edges:
+        if edge.relationship_type.value == "part_of":
+            part_ids.add(edge.source)
+
+    covered_ids: set[str] = set()
+    for edge in ctx.snapshot.edges:
+        if edge.relationship_type.value in required:
+            covered_ids.add(edge.target)
+
+    missing = sorted(part_ids - covered_ids, key=lambda pid: ctx.docs[pid].number)
+    out: list[Finding] = []
+    for part_id in missing:
+        doc = ctx.docs[part_id]
+        out.append(_finding(
+            rule, doc,
+            "Part without supporting documents",
+            f"{doc.number} is a part but has no specification, test, or work instruction "
+            f"pointing at it.",
+            f"Add a document with one of these relationships to {doc.number}: "
+            f"{', '.join(sorted(required))}.",
+            subject="part_coverage",
+            evidence="|".join(sorted(required)),
+            details={"part": doc.number, "required": sorted(required)}))
+    return out
+
+
+CHECKS["PART_COVERAGE"] = part_coverage

@@ -12,6 +12,7 @@ from app.engines.validation import (
 from app.models.bim import BimElement
 from app.models.dependency import Dependency
 from app.models.document import Document, DocumentRevision
+from app.models.project import Project
 from app.models.impact import ImpactEvent
 from app.models.user import User
 from app.models.validation import IssueAcknowledgement, Rule, ValidationIssue, ValidationRun
@@ -47,19 +48,27 @@ def rule_configs(db: Session, project_id: str | None = None) -> dict[str, RuleCo
 
     Order of precedence, highest last:
       1. Factory defaults
-      2. Per-rule database overrides (from the rules page)
-      3. Active profile for the project (if any)
+      2. Domain filter (BIM-only rules excluded from manufacturing projects, and vice versa)
+      3. Per-rule database overrides (from the rules page)
+      4. Active profile for the project (if any)
     """
     base = {rid: RuleConfig(rid, row.enabled, row.severity, row.params or {})
             for rid, row in ensure_rules(db).items()}
     if project_id is None:
         return base
+
+    project = db.get(Project, project_id)
+    if project is not None:
+        domain = project.domain.value if hasattr(project.domain, "value") else str(project.domain)
+        base = {rid: cfg for rid, cfg in base.items()
+                if BY_ID[rid].applicable_domains is None
+                or domain in BY_ID[rid].applicable_domains}
+
     activation = db.scalar(select(ProfileActivation).where(ProfileActivation.project_id == project_id))
     if activation is None:
         return base
     profile = profile_registry.load_by_id(activation.profile_id)
     if profile is None:
-        # The profile file was removed since activation; fall back silently.
         return base
     merged = dict(base)
     for rule_id, override in profile.rules.items():

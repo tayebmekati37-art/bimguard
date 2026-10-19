@@ -13,6 +13,10 @@ class RelationshipType(str, Enum):
     QUANTITY_BASED_ON = "quantity_based_on"
     VALIDATION_SOURCE = "validation_source"
     APPROVAL_DEPENDENCY = "approval_dependency"
+    PART_OF = "part_of"
+    SPECIFICATION_FOR = "specification_for"
+    TEST_FOR = "test_for"
+    WORK_INSTRUCTION_FOR = "work_instruction_for"
 
 
 class Flow(str, Enum):
@@ -33,6 +37,10 @@ FLOW: dict[RelationshipType, Flow] = {
     RelationshipType.QUANTITY_BASED_ON: Flow.TARGET_TO_SOURCE,
     RelationshipType.VALIDATION_SOURCE: Flow.TARGET_TO_SOURCE,
     RelationshipType.APPROVAL_DEPENDENCY: Flow.TARGET_TO_SOURCE,
+    RelationshipType.PART_OF: Flow.TARGET_TO_SOURCE,
+    RelationshipType.SPECIFICATION_FOR: Flow.TARGET_TO_SOURCE,
+    RelationshipType.TEST_FOR: Flow.TARGET_TO_SOURCE,
+    RelationshipType.WORK_INSTRUCTION_FOR: Flow.TARGET_TO_SOURCE,
 }
 
 # How strongly a change travels along each kind of relationship (0..1). A structural dependency matters
@@ -47,6 +55,10 @@ DEFAULT_TYPE_WEIGHTS: dict[RelationshipType, float] = {
     RelationshipType.VALIDATION_SOURCE: 0.7,
     RelationshipType.SPATIALLY_RELATED_TO: 0.6,
     RelationshipType.REFERENCES: 0.3,
+    RelationshipType.PART_OF: 1.0,
+    RelationshipType.SPECIFICATION_FOR: 0.9,
+    RelationshipType.WORK_INSTRUCTION_FOR: 0.85,
+    RelationshipType.TEST_FOR: 0.8,
 }
 
 
