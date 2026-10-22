@@ -1,0 +1,3 @@
+{
+  "GET /health [anon]": "public-200"
+}
