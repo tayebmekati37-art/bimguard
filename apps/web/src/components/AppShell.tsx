@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
-import { ApiError, getMe, tokenStore, type User } from "@/lib/api";
+import { ApiError, getMe, logout, tokenStore, type User } from "@/lib/api";
 import { SearchBox } from "@/components/SearchBox";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useT } from "@/lib/i18n";
@@ -31,7 +31,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   }, [router]);
 
-  function signOut() { tokenStore.clear(); router.replace("/login"); }
+  async function signOut() {
+    try { await logout(); } catch { /* token may already be expired */ }
+    tokenStore.clear();
+    router.replace("/login");
+  }
 
   if (error) return <p role="alert" className="p-8 text-status-critical">{error}</p>;
   if (!user) return <p className="p-8 text-muted">Loading</p>;

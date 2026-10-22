@@ -436,3 +436,5 @@ export const activateProjectProfile = (projectId: string, profileId: string) =>
     jsonInit("PUT", { profile_id: profileId }));
 export const deactivateProjectProfile = (projectId: string) =>
   request<ProfileActivation>(`/projects/${projectId}/profile`, { method: "DELETE" });
+
+export const logout = () => request<void>("/auth/logout", { method: "POST" });

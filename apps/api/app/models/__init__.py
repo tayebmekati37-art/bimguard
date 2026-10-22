@@ -1,1 +1,1 @@
-from app.models import ai_query, notification, profile, audit, bim, comparison, dependency, document, impact, project, user, validation  # noqa: F401  (register tables)
+from app.models import ai_query, audit, bim, comparison, dependency, document, impact, notification, profile, project, revoked_token, user, validation  # noqa: F401  (register tables)  # noqa: F401  (register tables)

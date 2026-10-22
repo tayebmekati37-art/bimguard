@@ -1,4 +1,5 @@
 import logging
+import uuid
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
@@ -26,7 +27,16 @@ def verify_password(password: str, hashed: str) -> bool:
 def create_access_token(subject: str, role: str) -> str:
     s = get_settings()
     exp = datetime.now(UTC) + timedelta(minutes=s.jwt_expire_minutes)
-    return jwt.encode({"sub": subject, "role": role, "exp": exp}, s.jwt_secret, s.jwt_algorithm)
+    return jwt.encode(
+        {
+            "sub": subject,
+            "role": role,
+            "exp": exp,
+            "jti": uuid.uuid4().hex,
+        },
+        s.jwt_secret,
+        s.jwt_algorithm,
+    )
 
 
 def decode_access_token(token: str) -> dict:
