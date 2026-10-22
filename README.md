@@ -17,6 +17,7 @@ A deterministic engine for BIM projects: detects changes between revisions, foll
 - Optionally rewords the deterministic answer with AI, with a grounding check.
 - Exports a readiness report as JSON, CSV, or PDF.
 - Applies versioned quality profiles to a project's validation rules.
+- JWT session revocation and DB-backed login rate limiting.
 - Notifies affected users and logs every action.
 
 ## Run it

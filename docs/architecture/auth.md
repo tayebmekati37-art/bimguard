@@ -43,11 +43,57 @@ logged-out token cannot be resurrected by taking the database down.
 Deletes rows where `expires_at < now()`. Safe at any time; an expired
 row has no effect because JWT validation already rejects the token.
 
+## Login rate limiting (M19b)
+
+Failed login attempts are stored in `login_attempts` and used to rate
+limit `POST /auth/login`.
+
+| Limit | Default | Configurable |
+| :--- | :--- | :--- |
+| Failed attempts per email | 5 in 15 min | `LOGIN_RATE_LIMIT_EMAIL_MAX`, `LOGIN_RATE_LIMIT_EMAIL_WINDOW_MINUTES` |
+| Failed attempts per IP | 20 in 15 min | `LOGIN_RATE_LIMIT_IP_MAX`, `LOGIN_RATE_LIMIT_IP_WINDOW_MINUTES` |
+
+Either limit triggers `429 Too Many Requests` with a `Retry-After` header
+carrying the seconds until the window frees up. The response body does not
+reveal whether the email exists.
+
+**Only failed attempts count.** A successful login clears recent rows for
+that email, so a typo followed by the correct password does not lock the
+user out.
+
+**Storage is the database.** No in-memory cache. The limit works across
+multiple workers and survives restarts. Consequence: if the database is
+down, the rate-limit check fails and login returns 503 (fail-closed, same
+as revocation).
+
+### Client IP
+
+By default `request.client.host` is used. Behind a reverse proxy, set
+`TRUST_PROXY_HEADERS=true` so the leftmost `X-Forwarded-For` entry is
+used. **Do not enable this without an actual proxy in front of the API**;
+the header is client-controlled and turning it on without a proxy lets
+attackers spoof their IP and bypass the per-IP limit.
+
+### Cleanup
+
+    cd apps/api
+    python scripts/cleanup_login_attempts.py
+
+Deletes rows older than 60 minutes. Safe at any time: rows outside the
+window do not affect the limit, so removing them does not change any
+outcome.
+
+### What this does NOT provide
+
+- Per-account lockout (an email limit slows an attacker but does not
+  permanently disable the account; correct password still works)
+- CAPTCHA challenge after failures
+- Exponential backoff (fixed window, not sliding or backoff)
+- Distributed throttling beyond what the database provides
 ## What this milestone does NOT provide
 
 - No refresh tokens (the app issues access tokens only)
 - No per-user "log out everywhere" endpoint
-- No login rate limiting (M19b)
 - No object-level authorization audit (M19c)
 - No server-side session list UI
 

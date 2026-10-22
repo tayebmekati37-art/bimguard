@@ -16,6 +16,18 @@ class Settings(BaseSettings):
     storage_dir: str = "./storage"
     max_upload_mb: int = 50
 
+    # Login rate limiting (M19b). Only failed attempts are counted.
+    # Successful login clears recent failures for that email.
+    login_rate_limit_email_max: int = 5
+    login_rate_limit_email_window_minutes: int = 15
+    login_rate_limit_ip_max: int = 20
+    login_rate_limit_ip_window_minutes: int = 15
+
+    # Trust X-Forwarded-For only when running behind a trusted reverse proxy.
+    # Do not enable this if the API is directly reachable from the internet,
+    # because the header can be forged by the client.
+    trust_proxy_headers: bool = False
+
 
 @lru_cache
 def get_settings() -> Settings:
