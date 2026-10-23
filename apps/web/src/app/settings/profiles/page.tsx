@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ErrorNote, btnPrimary, btnSecondary } from "@/components/ui";
+import { useT } from "@/lib/i18n";
 import {
   activateProjectProfile, deactivateProjectProfile, getProjectProfile,
   listProfiles, listProjects,
@@ -12,6 +13,7 @@ import {
 import { formatDate } from "@/lib/labels";
 
 function ProfilesView() {
+  const { t } = useT();
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectId, setProjectId] = useState("");
@@ -44,50 +46,51 @@ function ProfilesView() {
     finally { setBusy(false); }
   }
 
+  function activatedLabel(a: ProfileActivation): string {
+    if (!a.activated_at) return "";
+    const date = formatDate(a.activated_at);
+    return a.activated_by_name
+      ? t("profiles.activatedBy", { date, name: a.activated_by_name })
+      : t("profiles.activatedAt", { date });
+  }
+
   return (
     <>
-      <h1 className="text-2xl font-semibold">Quality profiles</h1>
-      <p className="mt-1 text-sm text-muted">
-        A profile bundles rule overrides for one project. Activating a profile
-        changes the severity, parameters or enabled state of existing rules.
-        It does not add new rules.
-      </p>
+      <h1 className="text-2xl font-semibold">{t("profiles.title")}</h1>
+      <p className="mt-1 text-sm text-muted">{t("profiles.description")}</p>
 
       <ErrorNote message={error} />
 
       <div className="mt-5 flex flex-wrap items-end gap-3">
         <label className="flex flex-col text-sm">
-          <span className="mb-1 text-muted">Project</span>
+          <span className="mb-1 text-muted">{t("profiles.project")}</span>
           <select
             className="rounded border border-line bg-white px-3 py-2 text-sm"
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
           >
-            <option value="">Choose a project</option>
+            <option value="">{t("profiles.chooseProject")}</option>
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </label>
 
         {activation && (
           <div className="text-sm">
-            <span className="text-muted">Active profile: </span>
+            <span className="text-muted">{t("profiles.activeProfile")} </span>
             {activation.profile_id ? (
               <>
                 <span className="font-mono">{activation.profile_id}</span>
-                <span className="ml-2 text-xs text-muted">
-                  activated {activation.activated_at ? formatDate(activation.activated_at) : ""}
-                  {activation.activated_by_name ? ` by ${activation.activated_by_name}` : ""}
-                </span>
+                <span className="ml-2 text-xs text-muted">{activatedLabel(activation)}</span>
                 <button
                   className={`${btnSecondary} ml-3`}
                   disabled={busy}
                   onClick={() => act(() => deactivateProjectProfile(projectId))}
                 >
-                  Deactivate
+                  {t("profiles.deactivate")}
                 </button>
               </>
             ) : (
-              <span className="text-muted">none</span>
+              <span className="text-muted">{t("profiles.none")}</span>
             )}
           </div>
         )}
@@ -96,10 +99,10 @@ function ProfilesView() {
       <table className="mt-6 w-full border border-line bg-white text-sm">
         <thead className="border-b border-line bg-paper text-left text-muted">
           <tr>
-            <th className="px-3 py-2 font-medium">Id</th>
-            <th className="px-3 py-2 font-medium">Name</th>
-            <th className="px-3 py-2 font-medium">Rules</th>
-            <th className="px-3 py-2 font-medium">Illustrative</th>
+            <th className="px-3 py-2 font-medium">{t("profiles.id")}</th>
+            <th className="px-3 py-2 font-medium">{t("profiles.name")}</th>
+            <th className="px-3 py-2 font-medium">{t("profiles.rules")}</th>
+            <th className="px-3 py-2 font-medium">{t("profiles.illustrative")}</th>
             <th />
           </tr>
         </thead>
@@ -114,8 +117,8 @@ function ProfilesView() {
               <td className="px-3 py-2">{p.rule_count}</td>
               <td className="px-3 py-2">
                 {p.illustrative
-                  ? <span className="rounded border border-status-warn px-2 py-0.5 text-xs text-status-warn">Illustrative</span>
-                  : <span className="text-muted">-</span>}
+                  ? <span className="rounded border border-status-warn px-2 py-0.5 text-xs text-status-warn">{t("profiles.illustrative")}</span>
+                  : <span className="text-muted">{t("common.na")}</span>}
               </td>
               <td className="px-3 py-2 text-right">
                 <button
@@ -123,7 +126,7 @@ function ProfilesView() {
                   disabled={busy || !projectId || activation?.profile_id === p.id}
                   onClick={() => act(() => activateProjectProfile(projectId, p.id))}
                 >
-                  {activation?.profile_id === p.id ? "Active" : "Activate"}
+                  {activation?.profile_id === p.id ? t("profiles.active") : t("profiles.activate")}
                 </button>
               </td>
             </tr>
@@ -132,13 +135,13 @@ function ProfilesView() {
       </table>
 
       <p className="mt-6 text-xs text-muted">
-        The bundled <span className="font-mono">jp-bimcim-v1</span> profile is
-        marked illustrative. It configures BIMGuard&apos;s own rules; it does
-        not claim compliance with any official MLIT BIM/CIM requirement.
+        {t("profiles.bundledNoteBefore")}{" "}
+        <span className="font-mono">jp-bimcim-v1</span>{" "}
+        {t("profiles.bundledNoteAfter")}
       </p>
 
       <p className="mt-4 text-sm">
-        <Link href="/settings" className="text-steel hover:underline">Back to settings</Link>
+        <Link href="/settings" className="text-steel hover:underline">{t("breadcrumb.backToSettings")}</Link>
       </p>
     </>
   );
