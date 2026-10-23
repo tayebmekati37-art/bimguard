@@ -99,6 +99,10 @@ const DICTS: Record<Locale, Record<string, string>> = {
     "ask.badge.ai": "AI",
     "ask.badge.template": "Template",
     "ask.groundingFailed": "Grounding check failed",
+    // ---------------- explain button
+    "explain.button": "Explain",
+    "explain.buttonLoading": "Explaining...",
+    "explain.groundingFallback": "Grounding check failed; showing template answer instead.",
     // ---------------- reports page
     "reports.title": "Reports",
     "reports.description": "The readiness report as structured JSON, a spreadsheet-friendly CSV, and a printable PDF. All three contain the same data.",
@@ -373,6 +377,10 @@ const DICTS: Record<Locale, Record<string, string>> = {
     "ask.badge.ai": "AI",
     "ask.badge.template": "テンプレート",
     "ask.groundingFailed": "グラウンディングチェックに失敗",
+    // ---------------- explain button
+    "explain.button": "説明",
+    "explain.buttonLoading": "説明中...",
+    "explain.groundingFallback": "グラウンディングチェックに失敗したため、テンプレートの回答を表示しています。",
     // ---------------- reports page
     "reports.title": "レポート",
     "reports.description": "発行可否レポートを構造化 JSON、表計算ソフト対応 CSV、印刷可能な PDF で出力します。3 形式とも同じデータを含みます。",
