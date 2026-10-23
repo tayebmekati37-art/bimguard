@@ -2,12 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 import { searchAll, type SearchHit, type SearchResults } from "@/lib/api";
 import { useDebounced } from "@/components/ui";
 
-const GROUPS: { key: keyof Omit<SearchResults, "query">; title: string }[] = [
-  { key: "projects", title: "Projects" }, { key: "documents", title: "Documents" },
-  { key: "elements", title: "Elements" }, { key: "issues", title: "Issues" },
+const GROUPS: { key: keyof Omit<SearchResults, "query">; titleKey: string }[] = [
+  { key: "projects", titleKey: "search.groupProjects" },
+  { key: "documents", titleKey: "search.groupDocuments" },
+  { key: "elements", titleKey: "search.groupElements" },
+  { key: "issues", titleKey: "search.groupIssues" },
 ];
 
 function destination(hit: SearchHit): string {
@@ -18,6 +21,7 @@ function destination(hit: SearchHit): string {
 
 export function SearchBox() {
   const router = useRouter();
+  const { t } = useT();
   const [text, setText] = useState("");
   const [results, setResults] = useState<SearchResults | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,17 +60,17 @@ export function SearchBox() {
   let index = -1;
   return (
     <div ref={box} className="relative w-72">
-      <input ref={input} type="search" role="combobox" aria-expanded={showPanel} aria-controls="search-results" aria-label="Search projects, documents, elements and issues"
-             placeholder="Search (Ctrl+K)" className="w-full rounded border border-line bg-white px-3 py-1.5 text-sm"
+      <input ref={input} type="search" role="combobox" aria-expanded={showPanel} aria-controls="search-results" aria-label={t("search.ariaLabel")}
+             placeholder={t("search.placeholder")} className="w-full rounded border border-line bg-white px-3 py-1.5 text-sm"
              value={text} onChange={(e) => { setText(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} onKeyDown={onKeyDown} />
       {showPanel && (
         <div id="search-results" role="listbox" className="absolute right-0 z-30 mt-1 max-h-[28rem] w-[26rem] overflow-y-auto rounded border border-line bg-white shadow-lg">
           {error && <p className="p-3 text-sm text-status-critical">{error}</p>}
-          {!error && results && flat.length === 0 && <p className="p-3 text-sm text-muted">Nothing found for &quot;{q}&quot;.</p>}
-          {!error && !results && <p className="p-3 text-sm text-muted">Searching</p>}
+          {!error && results && flat.length === 0 && <p className="p-3 text-sm text-muted">{t("search.nothingFound", { query: q })}</p>}
+          {!error && !results && <p className="p-3 text-sm text-muted">{t("search.searching")}</p>}
           {results && GROUPS.map((g) => results[g.key].length > 0 && (
             <div key={g.key}>
-              <p className="border-b border-line bg-paper px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted">{g.title}</p>
+              <p className="border-b border-line bg-paper px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted">{t(g.titleKey)}</p>
               {results[g.key].map((hit) => {
                 index += 1;
                 const mine = index;
