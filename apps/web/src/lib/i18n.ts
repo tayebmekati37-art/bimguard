@@ -506,6 +506,26 @@ const DICTS: Record<Locale, Record<string, string>> = {
     "validation.acknowledgeTitle": "Acknowledge issue",
     "validation.acknowledgeWarning": "Acknowledging accepts the risk, it does not fix it. The reason is recorded in the audit log and the report. It only applies while the evidence stays the same: a new revision brings the issue back.",
     "validation.reasonLabel": "Reason (at least 5 characters)",
+    // ---------------- M21b-iii-d: compare page
+    "compare.title": "Revision comparison",
+    "compare.summaryAria": "Summary",
+    "compare.searchAria": "Search changes",
+    "compare.searchPlaceholder": "Search element or field",
+    "compare.backToProject": "Back to project",
+    "compare.noDifferences": "No meaningful differences were detected between these revisions.",
+    "compare.planView": "Plan view",
+    "compare.detectedChanges": "Detected changes",
+    "compare.noMatch": "No changes match these filters.",
+    "compare.elementId": "Element id",
+    "compare.matchedBy": "Matched by",
+    // ---------------- M21b-iii-d: graph
+    "graph.legendAria": "Legend",
+    "graph.diagramAria": "Document dependency graph",
+    // ---------------- M21b-iii-d: plan view
+    "plan.ariaLabel": "Plan view of changed elements, old position dashed and new position solid",
+    "plan.oldPosition": "Old position",
+    "plan.newPosition": "New position",
+    "plan.modifiedNew": "Modified (new)",
     // ---------------- M21b-ii additions
     "login.tagline": "Version control tells you what changed. BIMGuard tells you what that change could affect.",
     "login.taglineLong": "Change detection, dependency analysis and issue-readiness checks that sit alongside your existing BIM and document management.",
@@ -1080,6 +1100,26 @@ const DICTS: Record<Locale, Record<string, string>> = {
     "validation.acknowledgeTitle": "課題を確認応答",
     "validation.acknowledgeWarning": "確認応答はリスクを受け入れるものであり、修正ではありません。理由は監査ログとレポートに記録されます。証拠が同じ間のみ有効です:新しいリビジョンが課題を再発させます。",
     "validation.reasonLabel": "理由(5 文字以上)",
+    // ---------------- M21b-iii-d: compare page
+    "compare.title": "リビジョン比較",
+    "compare.summaryAria": "概要",
+    "compare.searchAria": "変更を検索",
+    "compare.searchPlaceholder": "要素またはフィールドで検索",
+    "compare.backToProject": "プロジェクトに戻る",
+    "compare.noDifferences": "これらのリビジョン間に意味のある差異は検出されませんでした。",
+    "compare.planView": "平面図",
+    "compare.detectedChanges": "検出された変更",
+    "compare.noMatch": "このフィルタに一致する変更はありません。",
+    "compare.elementId": "要素 ID",
+    "compare.matchedBy": "一致方法",
+    // ---------------- M21b-iii-d: graph
+    "graph.legendAria": "凡例",
+    "graph.diagramAria": "文書依存関係グラフ",
+    // ---------------- M21b-iii-d: plan view
+    "plan.ariaLabel": "変更要素の平面図。旧位置は破線、新位置は実線。",
+    "plan.oldPosition": "旧位置",
+    "plan.newPosition": "新位置",
+    "plan.modifiedNew": "変更後(新)",
     // ---------------- M21b-ii additions
     "login.tagline": "バージョン管理は「何が変わったか」を教えてくれます。BIMGuard は「その変更が何に影響するか」を教えてくれます。",
     "login.taglineLong": "既存の BIM・文書管理と並行して動作する、変更検出・依存関係分析・発行可否チェック。",
