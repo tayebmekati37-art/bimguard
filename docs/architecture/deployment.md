@@ -1,4 +1,6 @@
-# Deployment and trust (Milestone 17)
+# Deployment and trust
+
+> Backup and restore are covered in docs/architecture/backup.md (M20). This document covers the deployment environment, secret handling, and the remaining scope boundaries.
 
 ## What this milestone ships
 

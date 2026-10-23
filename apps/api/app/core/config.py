@@ -27,6 +27,17 @@ class Settings(BaseSettings):
     # Do not enable this if the API is directly reachable from the internet,
     # because the header can be forged by the client.
     trust_proxy_headers: bool = False
+    # Backup (M20). Operations, not guarantees.
+    # backup_dir defaults to <storage_dir>/backups when None.
+    backup_dir: str | None = None
+    # Retention: documented for operators. Not enforced by code; deleting
+    # backups is a policy decision, not an application action.
+    backup_retention_days: int = 30
+    # Where to find pg_dump when POST /admin/backup/native runs against
+    # Postgres. Empty by default: the API container does not ship
+    # postgresql-client, so the endpoint returns 501 with the correct
+    # docker command instead.
+    pg_dump_path: str = "pg_dump"
 
 
 @lru_cache
