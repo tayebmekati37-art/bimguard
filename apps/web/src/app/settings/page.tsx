@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ErrorNote } from "@/components/ui";
+import { useT } from "@/lib/i18n";
 import { getAiStatus, type AiStatus } from "@/lib/api";
 
 function SettingsView() {
+  const { t } = useT();
   const [status, setStatus] = useState<AiStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,23 +18,40 @@ function SettingsView() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Settings</h1>
-      <p className="mt-2 text-sm"><Link href="/settings/profiles" className="text-steel hover:underline">Quality profiles</Link> - activate a rule profile for a project.</p>
-      
+      <h1 className="text-2xl font-semibold">{t("settings.title")}</h1>
+
+      <p className="mt-3 rounded border border-line bg-paper px-3 py-2 text-xs text-muted">
+        {t("settings.translationNotice")}
+      </p>
 
       <section className="mt-5 rounded border border-line bg-white p-4">
-        <h2 className="font-medium">AI explanation layer</h2>
+        <h2 className="font-medium">{t("settings.aiLayer")}</h2>
         <ErrorNote message={error} />
         {status && (
           <dl className="mt-3 space-y-1 text-sm">
-            <div className="flex gap-3"><dt className="w-32 text-muted">Status</dt><dd>{status.enabled ? "Enabled" : "Disabled"}</dd></div>
-            <div className="flex gap-3"><dt className="w-32 text-muted">Model</dt><dd className="font-mono">{status.model ?? "(not configured)"}</dd></div>
-            <div className="flex gap-3"><dt className="w-32 text-muted">Hourly limit</dt><dd>{status.hourly_limit}</dd></div>
+            <div className="flex gap-3">
+              <dt className="w-40 text-muted">{t("settings.aiStatus")}</dt>
+              <dd>{status.enabled ? t("settings.aiEnabled") : t("settings.aiDisabled")}</dd>
+            </div>
+            <div className="flex gap-3">
+              <dt className="w-40 text-muted">{t("settings.aiModel")}</dt>
+              <dd className="font-mono">{status.model ?? t("settings.aiNotConfigured")}</dd>
+            </div>
+            <div className="flex gap-3">
+              <dt className="w-40 text-muted">{t("settings.aiHourlyLimit")}</dt>
+              <dd>{status.hourly_limit}</dd>
+            </div>
           </dl>
         )}
-        <p className="mt-3 text-xs text-muted">
-          Provider settings come from server environment variables (AI_BASE_URL, AI_API_KEY, AI_MODEL).
-          The deterministic templates always work, even when AI is disabled.
+        <p className="mt-3 text-xs text-muted">{t("settings.aiProviderNote")}</p>
+      </section>
+
+      <section className="mt-4 rounded border border-line bg-white p-4">
+        <p className="text-sm">
+          <Link href="/settings/profiles" className="text-steel hover:underline font-medium">
+            {t("settings.profilesLink")}
+          </Link>{" "}
+          <span className="text-muted">— {t("settings.profilesDescription")}</span>
         </p>
       </section>
     </>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ErrorNote, Pager, btnSecondary } from "@/components/ui";
+import { useT } from "@/lib/i18n";
 import {
   listAuditLogs, listProjects,
   type AuditLogRecord, type Project,
@@ -24,6 +25,7 @@ function formatDetail(detail: Record<string, unknown>): string {
 }
 
 function AuditView() {
+  const { t } = useT();
   const [items, setItems] = useState<AuditLogRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -68,10 +70,8 @@ function AuditView() {
     <>
       <div className="flex items-start justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-semibold">Audit log</h1>
-          <p className="mt-1 text-sm text-muted">
-            Every change recorded by the app: uploads, dependencies, validation runs, acknowledgements.
-          </p>
+          <h1 className="text-2xl font-semibold">{t("audit.title")}</h1>
+          <p className="mt-1 text-sm text-muted">{t("audit.description")}</p>
         </div>
       </div>
 
@@ -79,45 +79,45 @@ function AuditView() {
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <select
-          aria-label="Filter by project"
+          aria-label={t("audit.project")}
           className="rounded border border-line bg-white px-3 py-1.5 text-sm"
           value={projectId}
           onChange={(e) => { setProjectId(e.target.value); setOffset(0); }}
         >
-          <option value="">All projects</option>
+          <option value="">{t("audit.allProjects")}</option>
           {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
 
         <form onSubmit={applyAction} className="flex items-center gap-2">
           <input
-            aria-label="Filter by action"
-            placeholder="e.g. dependency.created"
+            aria-label={t("audit.filterByAction")}
+            placeholder={t("audit.actionPlaceholder")}
             value={actionDraft}
             onChange={(e) => setActionDraft(e.target.value)}
             className="rounded border border-line bg-white px-3 py-1.5 text-sm"
           />
-          <button type="submit" className={btnSecondary}>Filter</button>
+          <button type="submit" className={btnSecondary}>{t("action.filter")}</button>
           {action && (
             <button type="button" className={btnSecondary}
                     onClick={() => { setAction(""); setActionDraft(""); setOffset(0); }}>
-              Clear
+              {t("action.clear")}
             </button>
           )}
         </form>
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-6 text-sm text-muted">No entries match these filters.</p>
+        <p className="mt-6 text-sm text-muted">{t("audit.empty")}</p>
       ) : (
         <table className="mt-4 w-full border border-line bg-white text-sm">
           <thead className="border-b border-line bg-paper text-left text-muted">
             <tr>
-              <th className="px-3 py-2 font-medium">When</th>
-              <th className="px-3 font-medium">User</th>
-              <th className="px-3 font-medium">Action</th>
-              <th className="px-3 font-medium">Entity</th>
-              <th className="px-3 font-medium">Project</th>
-              <th className="px-3 font-medium">Detail</th>
+              <th className="px-3 py-2 font-medium">{t("audit.when")}</th>
+              <th className="px-3 font-medium">{t("audit.user")}</th>
+              <th className="px-3 font-medium">{t("audit.action")}</th>
+              <th className="px-3 font-medium">{t("audit.entity")}</th>
+              <th className="px-3 font-medium">{t("audit.project")}</th>
+              <th className="px-3 font-medium">{t("audit.detail")}</th>
             </tr>
           </thead>
           <tbody>

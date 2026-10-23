@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ErrorNote, Pager, btnPrimary, btnSecondary } from "@/components/ui";
+import { useT } from "@/lib/i18n";
 import {
   listNotifications, markAllNotificationsRead, markNotificationRead,
   type NotificationRecord,
@@ -13,6 +14,7 @@ import { formatDate } from "@/lib/labels";
 const PAGE_SIZE = 25;
 
 function NotificationsView() {
+  const { t } = useT();
   const [items, setItems] = useState<NotificationRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -38,11 +40,11 @@ function NotificationsView() {
     <>
       <div className="flex items-start justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-semibold">Notifications</h1>
-          <p className="mt-1 text-sm text-muted">Events that need your attention.</p>
+          <h1 className="text-2xl font-semibold">{t("notifications.title")}</h1>
+          <p className="mt-1 text-sm text-muted">{t("notifications.description")}</p>
         </div>
         <button className={btnSecondary} disabled={busy} onClick={() => act(markAllNotificationsRead)}>
-          Mark all read
+          {t("notifications.markAllRead")}
         </button>
       </div>
 
@@ -50,13 +52,13 @@ function NotificationsView() {
 
       <div className="mt-4 flex items-center gap-3 text-sm">
         <button className={`${btnSecondary} ${!unreadOnly ? "border-steel bg-steel-light" : ""}`}
-                onClick={() => { setUnreadOnly(false); setOffset(0); }}>All</button>
+                onClick={() => { setUnreadOnly(false); setOffset(0); }}>{t("notifications.all")}</button>
         <button className={`${btnSecondary} ${unreadOnly ? "border-steel bg-steel-light" : ""}`}
-                onClick={() => { setUnreadOnly(true); setOffset(0); }}>Unread only</button>
+                onClick={() => { setUnreadOnly(true); setOffset(0); }}>{t("notifications.unreadOnly")}</button>
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-6 text-sm text-muted">Nothing here.</p>
+        <p className="mt-6 text-sm text-muted">{t("notifications.empty")}</p>
       ) : (
         <ul className="mt-4 space-y-2">
           {items.map((n) => (
@@ -69,11 +71,11 @@ function NotificationsView() {
                   <p className="mt-1 text-xs text-muted">{formatDate(n.created_at)} · {n.kind}</p>
                 </div>
                 <div className="flex shrink-0 gap-2">
-                  {n.link && <Link href={n.link} className={btnPrimary}>Open</Link>}
+                  {n.link && <Link href={n.link} className={btnPrimary}>{t("action.open")}</Link>}
                   {!n.read_at && (
                     <button className={btnSecondary} disabled={busy}
                             onClick={() => act(() => markNotificationRead(n.id))}>
-                      Mark read
+                      {t("notifications.markRead")}
                     </button>
                   )}
                 </div>

@@ -1,6 +1,7 @@
-// Lightweight parity check for the translation dictionaries.
-// Not run by the app; used by CI or manually via `npx tsx i18n.test.ts`.
+// Parity + review check for translation dictionaries.
+// Run: npx tsx src/lib/i18n.test.ts
 import { ALL_DICTS, type Locale } from "./i18n";
+import { IS_PROFESSIONALLY_REVIEWED, REVIEWED_KEYS } from "./i18n-review";
 
 const LOCALES: Locale[] = ["en", "ja"];
 const reference = Object.keys(ALL_DICTS.en).sort();
@@ -13,14 +14,13 @@ for (const locale of LOCALES) {
   const missing = reference.filter((k) => !keys.includes(k));
   const extra = keys.filter((k) => !reference.includes(k));
   if (missing.length) {
-    console.error(`${locale}: missing keys:`, missing);
+    console.error(`${locale}: missing keys (${missing.length}):`, missing.slice(0, 20));
     failures++;
   }
   if (extra.length) {
-    console.error(`${locale}: extra keys:`, extra);
+    console.error(`${locale}: extra keys (${extra.length}):`, extra.slice(0, 20));
     failures++;
   }
-  // Check no blank values
   for (const k of keys) {
     const v = ALL_DICTS[locale][k];
     if (!v || !v.trim()) {
@@ -30,8 +30,25 @@ for (const locale of LOCALES) {
   }
 }
 
+// If not professionally reviewed, REVIEWED_KEYS may be empty - that's fine.
+// If it claims review, at least half the keys must be marked.
+if (IS_PROFESSIONALLY_REVIEWED) {
+  const reviewed = REVIEWED_KEYS.size;
+  const total = reference.length;
+  if (reviewed < total / 2) {
+    console.error(
+      `IS_PROFESSIONALLY_REVIEWED is true but only ${reviewed}/${total} keys are marked reviewed.`,
+    );
+    failures++;
+  }
+}
+
 if (failures > 0) {
   console.error(`FAIL - ${failures} issue(s)`);
   process.exit(1);
 }
-console.log(`OK - ${reference.length} keys present in ${LOCALES.length} locales`);
+
+const reviewStatus = IS_PROFESSIONALLY_REVIEWED
+  ? "professionally reviewed"
+  : `machine-assisted (${REVIEWED_KEYS.size}/${reference.length} keys individually reviewed)`;
+console.log(`OK - ${reference.length} keys in ${LOCALES.length} locales; review status: ${reviewStatus}`);
