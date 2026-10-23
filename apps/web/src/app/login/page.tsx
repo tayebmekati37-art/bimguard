@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useT } from "@/lib/i18n";
 import { ApiError, login } from "@/lib/api";
 
 function DependencyDiagram() {
+  const { t } = useT();
   const node = (x: number, y: number, label: string, tone: string) => (
     <g key={label}>
       <rect x={x} y={y} width="92" height="34" rx="3" fill="#fff" stroke={tone} strokeWidth="1.5" />
@@ -12,8 +14,7 @@ function DependencyDiagram() {
     </g>
   );
   return (
-    <svg viewBox="0 0 360 230" className="w-full max-w-sm" role="img"
-         aria-label="Illustration: a change in architecture document A-101 propagates to S-201, M-301, Q-101 and E-020">
+    <svg viewBox="0 0 360 230" className="w-full max-w-sm" role="img" aria-label={t("login.diagramAria")}>
       <g stroke="#2F5D8A" strokeWidth="1.5" fill="none">
         <path d="M104 77 L150 41 L150 41" /><path d="M104 97 L150 97" /><path d="M104 117 L150 153" />
         <path d="M242 153 L258 195" strokeDasharray="4 3" />
@@ -29,6 +30,7 @@ function DependencyDiagram() {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export default function LoginPage() {
       await login(email.trim(), password);
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Sign-in failed. Please try again.");
+      setError(err instanceof ApiError ? err.message : t("login.signinFailed"));
     } finally {
       setBusy(false);
     }
@@ -54,28 +56,23 @@ export default function LoginPage() {
         <div className="text-lg font-semibold tracking-tight">BIMGuard</div>
         <div>
           <DependencyDiagram />
-          <h1 className="mt-8 max-w-md text-3xl font-semibold leading-tight">
-            Version control tells you what changed. BIMGuard tells you what that change could affect.
-          </h1>
-          <p className="mt-4 max-w-md text-muted">
-            Change detection, dependency analysis and issue-readiness checks that sit alongside your
-            existing BIM and document management.
-          </p>
+          <h1 className="mt-8 max-w-md text-3xl font-semibold leading-tight">{t("login.tagline")}</h1>
+          <p className="mt-4 max-w-md text-muted">{t("login.taglineLong")}</p>
         </div>
-        <p className="text-sm text-muted">Prototype. Uses open IFC data and simulated project data.</p>
+        <p className="text-sm text-muted">{t("login.prototypeNote")}</p>
       </section>
 
       <section className="flex items-center justify-center p-8">
         <form onSubmit={onSubmit} className="w-full max-w-sm" noValidate>
-          <h2 className="text-2xl font-semibold">Sign in</h2>
-          <p className="mt-1 text-sm text-muted">Use your BIMGuard account.</p>
+          <h2 className="text-2xl font-semibold">{t("login.title")}</h2>
+          <p className="mt-1 text-sm text-muted">{t("login.useAccount")}</p>
 
-          <label htmlFor="email" className="mt-8 block text-sm font-medium">Email</label>
+          <label htmlFor="email" className="mt-8 block text-sm font-medium">{t("login.email")}</label>
           <input id="email" type="email" autoComplete="username" required value={email}
                  onChange={(e) => setEmail(e.target.value)}
                  className="mt-1 w-full rounded border border-line bg-white px-3 py-2" />
 
-          <label htmlFor="password" className="mt-4 block text-sm font-medium">Password</label>
+          <label htmlFor="password" className="mt-4 block text-sm font-medium">{t("login.password")}</label>
           <input id="password" type="password" autoComplete="current-password" required value={password}
                  onChange={(e) => setPassword(e.target.value)}
                  className="mt-1 w-full rounded border border-line bg-white px-3 py-2" />
@@ -88,12 +85,10 @@ export default function LoginPage() {
 
           <button type="submit" disabled={busy || !email || !password}
                   className="mt-6 w-full rounded bg-steel px-4 py-2 font-medium text-white hover:bg-steel-dark disabled:opacity-50">
-            {busy ? "Signing in" : "Sign in"}
+            {busy ? t("login.signingIn") : t("login.submit")}
           </button>
 
-          <p className="mt-6 text-xs text-muted">
-            Local demo: engineer@example.local / engineer-demo-pass
-          </p>
+          <p className="mt-6 text-xs text-muted">{t("login.demoNote")}</p>
         </form>
       </section>
     </main>

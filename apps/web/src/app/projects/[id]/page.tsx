@@ -7,6 +7,7 @@ import { AppShell, useUser } from "@/components/AppShell";
 import { ElementsDialog } from "@/components/ElementsDialog";
 import { HealthPanel } from "@/components/HealthPanel";
 import { ErrorNote, Field, Modal, Pager, StatusBadge, btnDanger, btnPrimary, btnSecondary, inputCls, useDebounced } from "@/components/ui";
+import { useT } from "@/lib/i18n";
 import {
   createDocument, deleteProject, downloadRevision, getProject, getProjectHealth, listDocuments, listRevisions, reextractRevision, setRevisionStatus,
   updateProject, uploadRevision, type Discipline, type DocumentRecord, type Page, type Project, type ProjectHealth, type Revision, type RevisionStatus,
@@ -26,20 +27,21 @@ function useAction() {
 }
 
 function EditProjectDialog({ project, onClose, onSaved }: { project: Project; onClose: () => void; onSaved: () => void }) {
+  const { t } = useT();
   const [name, setName] = useState(project.name);
   const [client, setClient] = useState(project.client);
   const [description, setDescription] = useState(project.description);
   const { busy, error, run } = useAction();
   return (
-    <Modal title="Edit project" onClose={onClose}>
+    <Modal title={t("project.editDialogTitle")} onClose={onClose}>
       <form onSubmit={(e) => { e.preventDefault(); run(async () => { await updateProject(project.id, { name, client, description }); onSaved(); }); }}>
-        <Field label="Project name"><input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} required /></Field>
-        <Field label="Client"><input className={inputCls} value={client} onChange={(e) => setClient(e.target.value)} /></Field>
-        <Field label="Description"><textarea className={inputCls} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
+        <Field label={t("project.projectName")}><input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} required /></Field>
+        <Field label={t("project.clientLabel")}><input className={inputCls} value={client} onChange={(e) => setClient(e.target.value)} /></Field>
+        <Field label={t("project.descriptionLabel")}><textarea className={inputCls} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
         <ErrorNote message={error} />
         <div className="mt-6 flex justify-end gap-2">
-          <button type="button" className={btnSecondary} onClick={onClose}>Cancel</button>
-          <button type="submit" className={btnPrimary} disabled={busy || !name.trim()}>Save changes</button>
+          <button type="button" className={btnSecondary} onClick={onClose}>{t("action.cancel")}</button>
+          <button type="submit" className={btnPrimary} disabled={busy || !name.trim()}>{t("project.saveChanges")}</button>
         </div>
       </form>
     </Modal>
@@ -47,46 +49,47 @@ function EditProjectDialog({ project, onClose, onSaved }: { project: Project; on
 }
 
 function DeleteProjectDialog({ project, onClose, onDeleted }: { project: Project; onClose: () => void; onDeleted: () => void }) {
+  const { t } = useT();
   const [typed, setTyped] = useState("");
   const { busy, error, run } = useAction();
   return (
-    <Modal title="Delete project" onClose={onClose}>
+    <Modal title={t("project.deleteDialogTitle")} onClose={onClose}>
       <p className="mt-3 text-sm">
-        This permanently deletes <strong>{project.name}</strong>, its {project.document_count} documents, all revisions and
-        uploaded files. The audit log keeps a record that the project was deleted. Archive the project instead if you may need it again.
+        <strong>{project.name}</strong>, {t("project.deleteWarningTail", { count: project.document_count })}
       </p>
-      <Field label={`Type the project name to confirm`}><input className={inputCls} value={typed} onChange={(e) => setTyped(e.target.value)} /></Field>
+      <Field label={t("project.deleteConfirmType")}><input className={inputCls} value={typed} onChange={(e) => setTyped(e.target.value)} /></Field>
       <ErrorNote message={error} />
       <div className="mt-6 flex justify-end gap-2">
-        <button className={btnSecondary} onClick={onClose}>Cancel</button>
+        <button className={btnSecondary} onClick={onClose}>{t("action.cancel")}</button>
         <button className={btnDanger} disabled={busy || typed !== project.name}
-                onClick={() => run(async () => { await deleteProject(project.id); onDeleted(); })}>Delete project</button>
+                onClick={() => run(async () => { await deleteProject(project.id); onDeleted(); })}>{t("project.delete")}</button>
       </div>
     </Modal>
   );
 }
 
 function AddDocumentDialog({ projectId, onClose, onCreated }: { projectId: string; onClose: () => void; onCreated: () => void }) {
+  const { t } = useT();
   const [number, setNumber] = useState("");
   const [name, setName] = useState("");
   const [discipline, setDiscipline] = useState<Discipline>("architecture");
   const { busy, error, run } = useAction();
   return (
-    <Modal title="Add document" onClose={onClose}>
+    <Modal title={t("project.addDocumentDialogTitle")} onClose={onClose}>
       <form onSubmit={(e) => { e.preventDefault(); run(async () => { await createDocument(projectId, { document_number: number.trim(), name: name.trim(), discipline }); onCreated(); }); }}>
-        <Field label="Document number" hint="Letters, numbers, dot, dash. Example: A-101">
+        <Field label={t("project.docNumber")} hint={t("project.docNumberHint")}>
           <input className={`${inputCls} font-mono`} value={number} onChange={(e) => setNumber(e.target.value)} required autoFocus />
         </Field>
-        <Field label="Name"><input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Level 2 Floor Plan" required /></Field>
-        <Field label="Discipline">
+        <Field label={t("project.docName")}><input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder={t("project.docNamePlaceholder")} required /></Field>
+        <Field label={t("project.discipline")}>
           <select className={inputCls} value={discipline} onChange={(e) => setDiscipline(e.target.value as Discipline)}>
-            {Object.entries(DISCIPLINES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            {Object.keys(DISCIPLINES).map((k) => <option key={k} value={k}>{t(`discipline.${k}`)}</option>)}
           </select>
         </Field>
         <ErrorNote message={error} />
         <div className="mt-6 flex justify-end gap-2">
-          <button type="button" className={btnSecondary} onClick={onClose}>Cancel</button>
-          <button type="submit" className={btnPrimary} disabled={busy || !number.trim() || !name.trim()}>Add document</button>
+          <button type="button" className={btnSecondary} onClick={onClose}>{t("action.cancel")}</button>
+          <button type="submit" className={btnPrimary} disabled={busy || !number.trim() || !name.trim()}>{t("project.addDocument")}</button>
         </div>
       </form>
     </Modal>
@@ -94,6 +97,7 @@ function AddDocumentDialog({ projectId, onClose, onCreated }: { projectId: strin
 }
 
 function UploadRevisionDialog({ doc, onClose, onUploaded }: { doc: DocumentRecord; onClose: () => void; onUploaded: () => void }) {
+  const { t } = useT();
   const [file, setFile] = useState<File | null>(null);
   const [summary, setSummary] = useState("");
   const [status, setStatus] = useState<RevisionStatus>("draft");
@@ -101,7 +105,7 @@ function UploadRevisionDialog({ doc, onClose, onUploaded }: { doc: DocumentRecor
   const { busy, error, run } = useAction();
   const next = (doc.current_revision_number ?? 0) + 1;
   return (
-    <Modal title={`Upload revision for ${doc.document_number}`} onClose={onClose}>
+    <Modal title={t("project.uploadTitle", { number: doc.document_number })} onClose={onClose}>
       <form onSubmit={(e) => {
         e.preventDefault();
         if (!file) return;
@@ -112,22 +116,28 @@ function UploadRevisionDialog({ doc, onClose, onUploaded }: { doc: DocumentRecor
         if (number.trim()) form.append("revision_number", number.trim());
         run(async () => { await uploadRevision(doc.id, form); onUploaded(); });
       }}>
-        <Field label="File" hint="IFC, JSON, PDF, CSV, XLSX, DWG or RVT. Maximum 50 MB.">
+        <Field label={t("project.file")} hint={t("project.fileHint")}>
           <input type="file" className={inputCls} accept=".ifc,.json,.pdf,.csv,.xlsx,.dwg,.rvt" onChange={(e) => setFile(e.target.files?.[0] ?? null)} required />
         </Field>
-        <Field label="Revision number" hint={`Leave empty to use v${next}. Must be higher than the current revision.`}>
+        <Field label={t("project.revisionNumber")} hint={t("project.revisionNumberHint", { next })}>
           <input className={inputCls} inputMode="numeric" pattern="[0-9]*" value={number} onChange={(e) => setNumber(e.target.value)} placeholder={`v${next}`} />
         </Field>
-        <Field label="Status">
+        <Field label={t("project.revisionStatus")}>
           <select className={inputCls} value={status} onChange={(e) => setStatus(e.target.value as RevisionStatus)}>
-            {(Object.keys(STATUSES) as RevisionStatus[]).filter((s) => s !== "superseded").map((s) => <option key={s} value={s}>{STATUSES[s]}</option>)}
+            {(Object.keys(STATUSES) as RevisionStatus[]).filter((s) => s !== "superseded").map((s) => (
+              <option key={s} value={s}>{t(`status.${s}`)}</option>
+            ))}
           </select>
         </Field>
-        <Field label="Change summary"><textarea className={inputCls} rows={3} value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="What changed in this revision" /></Field>
+        <Field label={t("project.changeSummary")}>
+          <textarea className={inputCls} rows={3} value={summary} onChange={(e) => setSummary(e.target.value)} placeholder={t("project.changeSummaryPlaceholder")} />
+        </Field>
         <ErrorNote message={error} />
         <div className="mt-6 flex justify-end gap-2">
-          <button type="button" className={btnSecondary} onClick={onClose}>Cancel</button>
-          <button type="submit" className={btnPrimary} disabled={busy || !file}>{busy ? "Uploading" : "Upload revision"}</button>
+          <button type="button" className={btnSecondary} onClick={onClose}>{t("action.cancel")}</button>
+          <button type="submit" className={btnPrimary} disabled={busy || !file}>
+            {busy ? t("project.uploading") : t("project.upload")}
+          </button>
         </div>
       </form>
     </Modal>
@@ -136,6 +146,7 @@ function UploadRevisionDialog({ doc, onClose, onUploaded }: { doc: DocumentRecor
 
 function HistoryDialog({ doc, onClose, onChanged }: { doc: DocumentRecord; onClose: () => void; onChanged: () => void }) {
   const user = useUser();
+  const { t } = useT();
   const [revisions, setRevisions] = useState<Revision[] | null>(null);
   const { busy, error, run } = useAction();
   const [viewing, setViewing] = useState<Revision | null>(null);
@@ -156,16 +167,23 @@ function HistoryDialog({ doc, onClose, onChanged }: { doc: DocumentRecord; onClo
 
   return (
     <>
-    <Modal title={`${doc.document_number} revision history`} onClose={onClose} wide>
-      <p className="mt-1 text-sm text-muted">History is immutable. Uploading a new revision supersedes the previous one.</p>
+    <Modal title={t("project.historyTitle", { number: doc.document_number })} onClose={onClose} wide>
+      <p className="mt-1 text-sm text-muted">{t("project.historyImmutable")}</p>
       <ErrorNote message={error} />
-      {!revisions && <p className="mt-4 text-muted">Loading</p>}
-      {revisions && revisions.length === 0 && <p className="mt-4 text-sm">No revisions uploaded yet.</p>}
+      {!revisions && <p className="mt-4 text-muted">{t("common.loading")}</p>}
+      {revisions && revisions.length === 0 && <p className="mt-4 text-sm">{t("project.noRevisions")}</p>}
       {revisions && revisions.length > 0 && (
         <table className="mt-4 w-full text-sm">
           <thead className="border-b border-line text-left text-muted">
-            <tr><th className="py-2 font-medium">Rev</th><th className="font-medium">Status</th><th className="font-medium">File</th><th className="font-medium">Model data</th>
-                <th className="font-medium">Uploaded</th><th className="font-medium">Summary</th><th /></tr>
+            <tr>
+              <th className="py-2 font-medium">{t("project.colRev")}</th>
+              <th className="font-medium">{t("project.colStatus")}</th>
+              <th className="font-medium">{t("project.colFile")}</th>
+              <th className="font-medium">{t("project.colModelData")}</th>
+              <th className="font-medium">{t("project.colUploaded")}</th>
+              <th className="font-medium">{t("project.colSummary")}</th>
+              <th />
+            </tr>
           </thead>
           <tbody>
             {revisions.map((r) => (
@@ -174,27 +192,27 @@ function HistoryDialog({ doc, onClose, onChanged }: { doc: DocumentRecord; onClo
                 <td><StatusBadge status={r.status} /></td>
                 <td>{r.original_filename}<div className="text-xs text-muted">{formatSize(r.file_size)} · SHA-256 {r.checksum.slice(0, 10)}</div></td>
                 <td className="text-xs">
-                  {r.extraction_status === "pending" && <span className="text-status-warn">Processing</span>}
-                  {r.extraction_status === "ok" && <span>{r.element_count} elements<div className="text-muted">{r.model_schema}</div></span>}
-                  {r.extraction_status === "failed" && <span className="text-status-critical">Extraction failed<div className="max-w-[12rem] text-muted">{r.extraction_message}</div></span>}
-                  {r.extraction_status === "unsupported" && <span className="text-muted">No model data</span>}
+                  {r.extraction_status === "pending" && <span className="text-status-warn">{t("project.processing")}</span>}
+                  {r.extraction_status === "ok" && <span>{t("project.elementsCount", { count: r.element_count ?? 0 })}<div className="text-muted">{r.model_schema}</div></span>}
+                  {r.extraction_status === "failed" && <span className="text-status-critical">{t("project.extractionFailed")}<div className="max-w-[12rem] text-muted">{r.extraction_message}</div></span>}
+                  {r.extraction_status === "unsupported" && <span className="text-muted">{t("project.noModelData")}</span>}
                 </td>
                 <td>{formatDate(r.uploaded_at)}<div className="text-xs text-muted">{r.created_by_name}</div></td>
-                <td className="max-w-[14rem]">{r.change_summary || <span className="text-muted">None</span>}</td>
+                <td className="max-w-[14rem]">{r.change_summary || <span className="text-muted">{t("project.none")}</span>}</td>
                 <td className="space-y-1 text-right">
-                  {r.extraction_status === "ok" && <button className={btnSecondary} onClick={() => setViewing(r)}>Elements</button>}
+                  {r.extraction_status === "ok" && <button className={btnSecondary} onClick={() => setViewing(r)}>{t("project.btnElements")}</button>}
                   {r.extraction_status === "ok" && r.previous_revision_id && (
-                    <Link href={`/revisions/${r.id}/compare`} className={`${btnSecondary} ml-1 inline-block`}>Changes</Link>
+                    <Link href={`/revisions/${r.id}/compare`} className={`${btnSecondary} ml-1 inline-block`}>{t("project.btnChanges")}</Link>
                   )}
                   {can.editDocuments(user.role) && (r.extraction_status === "failed" || r.extraction_status === "pending") && (
                     <button className={`${btnSecondary} ml-1`} disabled={busy}
-                            onClick={() => run(async () => { await reextractRevision(r.id); load(); })}>Retry extraction</button>
+                            onClick={() => run(async () => { await reextractRevision(r.id); load(); })}>{t("project.btnRetry")}</button>
                   )}
-                  <button className={`${btnSecondary} ml-1`} onClick={() => run(() => downloadRevision(r))}>Download</button>
+                  <button className={`${btnSecondary} ml-1`} onClick={() => run(() => downloadRevision(r))}>{t("action.download")}</button>
                   {can.changeStatus(user.role) && allowed(r).map((s) => (
                     <button key={s} className={`${btnSecondary} ml-1`} disabled={busy}
                             onClick={() => run(async () => { await setRevisionStatus(r.id, s); load(); onChanged(); })}>
-                      Mark {STATUSES[s].toLowerCase()}
+                      {t("project.markStatus", { status: t(`status.${s}`) })}
                     </button>
                   ))}
                 </td>
@@ -213,6 +231,7 @@ function ProjectView() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const user = useUser();
+  const { t } = useT();
   const [project, setProject] = useState<Project | null>(null);
   const [docs, setDocs] = useState<Page<DocumentRecord> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -244,8 +263,8 @@ function ProjectView() {
   useEffect(loadHealth, [loadHealth]);
   const refresh = () => { loadProject(); loadDocs(); loadHealth(); };
 
-  if (error) return <><Link href="/projects" className="text-sm text-steel hover:underline">Back to projects</Link><ErrorNote message={error} /></>;
-  if (!project) return <p className="text-muted">Loading</p>;
+  if (error) return <><Link href="/projects" className="text-sm text-steel hover:underline">{t("breadcrumb.backToProjects")}</Link><ErrorNote message={error} /></>;
+  if (!project) return <p className="text-muted">{t("common.loading")}</p>;
 
   const archived = project.status === "archived";
   const canManage = can.manageProjects(user.role);
@@ -254,68 +273,70 @@ function ProjectView() {
 
   return (
     <>
-      <Link href="/projects" className="text-sm text-steel hover:underline">Back to projects</Link>
+      <Link href="/projects" className="text-sm text-steel hover:underline">{t("breadcrumb.backToProjects")}</Link>
       <div className="mt-3 flex items-start justify-between gap-6">
         <div>
           <h1 className="text-2xl font-semibold">{project.name} <StatusBadge status={project.status} /></h1>
-          <p className="mt-1 text-sm text-muted">{project.client || "No client set"} · {project.document_count} documents · Updated {formatDate(project.updated_at)}</p>
+          <p className="mt-1 text-sm text-muted">
+            {project.client || t("project.noClientSet")} · {project.document_count} {t("project.documents")} · {t("project.updated")} {formatDate(project.updated_at)}
+          </p>
           {project.description && <p className="mt-3 max-w-2xl text-sm">{project.description}</p>}
         </div>
         <div className="flex shrink-0 gap-2">
-          <Link href={`/projects/${project.id}/validation`} className={`${btnPrimary} inline-block`}>Validate for issue</Link>
-          <Link href={`/projects/${project.id}/impact`} className={`${btnSecondary} inline-block`}>Impact</Link>
-          <Link href={`/projects/${project.id}/dependencies`} className={`${btnSecondary} inline-block`}>Dependencies</Link>
-          <Link href={`/projects/${project.id}/ask`} className={`${btnSecondary} inline-block`}>Ask</Link>
-          <Link href={`/projects/${project.id}/reports`} className={`${btnSecondary} inline-block`}>Reports</Link>
-          <Link href={`/audit?project=${project.id}`} className={`${btnSecondary} inline-block`}>Audit</Link>
+          <Link href={`/projects/${project.id}/validation`} className={`${btnPrimary} inline-block`}>{t("project.validateForIssue")}</Link>
+          <Link href={`/projects/${project.id}/impact`} className={`${btnSecondary} inline-block`}>{t("project.impact")}</Link>
+          <Link href={`/projects/${project.id}/dependencies`} className={`${btnSecondary} inline-block`}>{t("project.dependencies")}</Link>
+          <Link href={`/projects/${project.id}/ask`} className={`${btnSecondary} inline-block`}>{t("project.ask")}</Link>
+          <Link href={`/projects/${project.id}/reports`} className={`${btnSecondary} inline-block`}>{t("project.reports")}</Link>
+          <Link href={`/audit?project=${project.id}`} className={`${btnSecondary} inline-block`}>{t("project.audit")}</Link>
           {canManage && (<>
-            <button className={btnSecondary} onClick={() => setDialog({ kind: "edit" })}>Edit</button>
+            <button className={btnSecondary} onClick={() => setDialog({ kind: "edit" })}>{t("project.edit")}</button>
             <button className={btnSecondary} disabled={archive.busy}
                     onClick={() => archive.run(async () => { await updateProject(project.id, { status: archived ? "active" : "archived" }); refresh(); })}>
-              {archived ? "Restore" : "Archive"}
+              {archived ? t("project.restore") : t("project.archive")}
             </button>
-            {can.deleteProjects(user.role) && <button className={btnSecondary} onClick={() => setDialog({ kind: "delete" })}>Delete</button>}
+            {can.deleteProjects(user.role) && <button className={btnSecondary} onClick={() => setDialog({ kind: "delete" })}>{t("project.delete")}</button>}
           </>)}
         </div>
       </div>
       <ErrorNote message={archive.error} />
-      {archived && <p className="mt-4 rounded border border-line bg-white px-3 py-2 text-sm">This project is archived. Restore it to add documents or upload revisions.</p>}
+      {archived && <p className="mt-4 rounded border border-line bg-white px-3 py-2 text-sm">{t("project.archivedBanner")}</p>}
 
       {health && <HealthPanel health={health} />}
 
       <div className="mt-8 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Documents</h2>
-        {canEdit && <button className={btnPrimary} onClick={() => setDialog({ kind: "add" })}>Add document</button>}
+        <h2 className="text-lg font-semibold">{t("project.documents")}</h2>
+        {canEdit && <button className={btnPrimary} onClick={() => setDialog({ kind: "add" })}>{t("project.addDocument")}</button>}
       </div>
       <div className="mt-3 flex flex-wrap gap-3">
-        <input aria-label="Search documents" placeholder="Search number or name" className="w-64 rounded border border-line bg-white px-3 py-2 text-sm"
+        <input aria-label={t("project.searchDocsAria")} placeholder={t("project.searchDocs")} className="w-64 rounded border border-line bg-white px-3 py-2 text-sm"
                value={search} onChange={(e) => { setSearch(e.target.value); setOffset(0); }} />
-        <select aria-label="Discipline filter" className="rounded border border-line bg-white px-3 py-2 text-sm" value={discipline}
+        <select aria-label={t("project.filterDisciplineAria")} className="rounded border border-line bg-white px-3 py-2 text-sm" value={discipline}
                 onChange={(e) => { setDiscipline(e.target.value); setOffset(0); }}>
-          <option value="">All disciplines</option>
-          {Object.entries(DISCIPLINES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          <option value="">{t("project.filterDiscipline")}</option>
+          {Object.keys(DISCIPLINES).map((k) => <option key={k} value={k}>{t(`discipline.${k}`)}</option>)}
         </select>
-        <select aria-label="Status filter" className="rounded border border-line bg-white px-3 py-2 text-sm" value={status}
+        <select aria-label={t("project.filterStatusAria")} className="rounded border border-line bg-white px-3 py-2 text-sm" value={status}
                 onChange={(e) => { setStatus(e.target.value); setOffset(0); }}>
-          <option value="">All statuses</option>
-          {Object.entries(STATUSES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          <option value="">{t("project.filterStatus")}</option>
+          {Object.keys(STATUSES).map((k) => <option key={k} value={k}>{t(`status.${k}`)}</option>)}
         </select>
-        <select aria-label="File type filter" className="rounded border border-line bg-white px-3 py-2 text-sm" value={fileType}
+        <select aria-label={t("project.filterFileTypeAria")} className="rounded border border-line bg-white px-3 py-2 text-sm" value={fileType}
                 onChange={(e) => { setFileType(e.target.value); setOffset(0); }}>
-          <option value="">All file types</option>
-          {FILE_TYPES.map((t) => <option key={t} value={t}>{t.toUpperCase()}</option>)}
+          <option value="">{t("project.filterFileType")}</option>
+          {FILE_TYPES.map((ft) => <option key={ft} value={ft}>{ft.toUpperCase()}</option>)}
         </select>
-        <input aria-label="Revision filter" placeholder="Revision" inputMode="numeric" pattern="[0-9]*" className="w-24 rounded border border-line bg-white px-3 py-2 text-sm"
+        <input aria-label={t("project.revisionFilterAria")} placeholder={t("project.revisionFilterPlaceholder")} inputMode="numeric" pattern="[0-9]*" className="w-24 rounded border border-line bg-white px-3 py-2 text-sm"
                value={revisionFilter} onChange={(e) => { setRevisionFilter(e.target.value.replace(/\D/g, "")); setOffset(0); }} />
-        <label className="flex items-center gap-2 text-sm text-muted">Modified since
-          <input type="date" aria-label="Modified since" className="rounded border border-line bg-white px-2 py-1.5 text-sm text-ink" value={since}
+        <label className="flex items-center gap-2 text-sm text-muted">{t("project.modifiedSince")}
+          <input type="date" aria-label={t("project.modifiedSinceAria")} className="rounded border border-line bg-white px-2 py-1.5 text-sm text-ink" value={since}
                  onChange={(e) => { setSince(e.target.value); setOffset(0); }} /></label>
       </div>
 
       {docs && docs.items.length === 0 && (
         <div className="mt-4 rounded border border-dashed border-line bg-white p-8">
-          <p className="font-medium">{filtersOn ? "No documents match these filters." : "No documents in this project yet."}</p>
-          {!filtersOn && <p className="mt-1 text-sm text-muted">{canEdit ? "Add a document, then upload its first revision." : "Documents appear here once an engineer adds them."}</p>}
+          <p className="font-medium">{filtersOn ? t("project.noMatchFilters") : t("project.noDocuments")}</p>
+          {!filtersOn && <p className="mt-1 text-sm text-muted">{canEdit ? t("project.addFirstHint") : t("project.engineerHint")}</p>}
         </div>
       )}
 
@@ -323,24 +344,30 @@ function ProjectView() {
         <>
           <table className="mt-4 w-full border border-line bg-white text-sm">
             <thead className="border-b border-line bg-paper text-left text-muted">
-              <tr><th className="px-3 py-2 font-medium">Number</th><th className="px-3 py-2 font-medium">Name</th>
-                  <th className="px-3 py-2 font-medium">Discipline</th><th className="px-3 py-2 font-medium">Revision</th>
-                  <th className="px-3 py-2 font-medium">Status</th><th className="px-3 py-2 font-medium">Author</th>
-                  <th className="px-3 py-2 font-medium">Modified</th><th /></tr>
+              <tr>
+                <th className="px-3 py-2 font-medium">{t("project.colNumber")}</th>
+                <th className="px-3 py-2 font-medium">{t("project.colName")}</th>
+                <th className="px-3 py-2 font-medium">{t("project.colDiscipline")}</th>
+                <th className="px-3 py-2 font-medium">{t("project.colRevision")}</th>
+                <th className="px-3 py-2 font-medium">{t("project.colStatus")}</th>
+                <th className="px-3 py-2 font-medium">{t("project.colAuthor")}</th>
+                <th className="px-3 py-2 font-medium">{t("project.colModified")}</th>
+                <th />
+              </tr>
             </thead>
             <tbody>
               {docs.items.map((d) => (
                 <tr key={d.id} className="border-b border-line last:border-0">
                   <td className="px-3 py-2 font-mono">{d.document_number}</td>
                   <td className="px-3 py-2">{d.name}</td>
-                  <td className="px-3 py-2">{DISCIPLINES[d.discipline]}</td>
-                  <td className="px-3 py-2 font-mono">{d.current_revision_number ? `v${d.current_revision_number}` : <span className="font-sans text-muted">None</span>}</td>
+                  <td className="px-3 py-2">{t(`discipline.${d.discipline}`)}</td>
+                  <td className="px-3 py-2 font-mono">{d.current_revision_number ? `v${d.current_revision_number}` : <span className="font-sans text-muted">{t("project.none")}</span>}</td>
                   <td className="px-3 py-2"><StatusBadge status={d.status} /></td>
                   <td className="px-3 py-2">{d.author}</td>
                   <td className="px-3 py-2 text-muted">{formatDate(d.modified_at)}</td>
                   <td className="space-x-2 whitespace-nowrap px-3 py-2 text-right">
-                    <button className={btnSecondary} onClick={() => setDialog({ kind: "history", doc: d })}>History</button>
-                    {canEdit && <button className={btnSecondary} onClick={() => setDialog({ kind: "upload", doc: d })}>Upload revision</button>}
+                    <button className={btnSecondary} onClick={() => setDialog({ kind: "history", doc: d })}>{t("project.history")}</button>
+                    {canEdit && <button className={btnSecondary} onClick={() => setDialog({ kind: "upload", doc: d })}>{t("project.upload")}</button>}
                   </td>
                 </tr>
               ))}

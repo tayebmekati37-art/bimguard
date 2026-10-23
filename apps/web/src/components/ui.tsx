@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ProjectStatus, RevisionStatus } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import { STATUSES } from "@/lib/labels";
 
 export const inputCls = "mt-1 w-full rounded border border-line bg-white px-3 py-2 text-sm";
@@ -17,7 +18,10 @@ const STATUS_TONE: Record<RevisionStatus | ProjectStatus, string> = {
 };
 
 export function StatusBadge({ status }: { status: RevisionStatus | ProjectStatus }) {
-  const label = status in STATUSES ? STATUSES[status as RevisionStatus] : status === "active" ? "Active" : "Archived";
+  const { t } = useT();
+  const label = status in STATUSES
+    ? t(`status.${status}`)
+    : status === "active" ? t("projects.active") : t("projects.archived");
   return <span className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${STATUS_TONE[status]}`}>{label}</span>;
 }
 
@@ -43,6 +47,7 @@ export function ErrorNote({ message }: { message: string | null }) {
 export function Modal({ title, onClose, children, wide }: {
   title: string; onClose: () => void; children: React.ReactNode; wide?: boolean;
 }) {
+  const { t } = useT();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
@@ -55,7 +60,7 @@ export function Modal({ title, onClose, children, wide }: {
            className={`mt-12 w-full rounded border border-line bg-white p-6 shadow-lg ${wide ? "max-w-3xl" : "max-w-md"}`}>
         <div className="flex items-start justify-between">
           <h2 className="text-lg font-semibold">{title}</h2>
-          <button onClick={onClose} aria-label="Close" className="text-muted hover:text-ink">Close</button>
+          <button onClick={onClose} aria-label={t("action.close")} className="text-muted hover:text-ink">{t("action.close")}</button>
         </div>
         {children}
       </div>
@@ -66,14 +71,15 @@ export function Modal({ title, onClose, children, wide }: {
 export function Pager({ total, limit, offset, onChange }: {
   total: number; limit: number; offset: number; onChange: (offset: number) => void;
 }) {
+  const { t } = useT();
   if (total <= limit) return null;
   const end = Math.min(offset + limit, total);
   return (
     <div className="mt-3 flex items-center justify-between text-sm text-muted">
-      <span>{offset + 1}–{end} of {total}</span>
+      <span>{t("pager.range", { start: offset + 1, end, total })}</span>
       <span className="flex gap-2">
-        <button className={btnSecondary} disabled={offset === 0} onClick={() => onChange(Math.max(0, offset - limit))}>Previous</button>
-        <button className={btnSecondary} disabled={end >= total} onClick={() => onChange(offset + limit)}>Next</button>
+        <button className={btnSecondary} disabled={offset === 0} onClick={() => onChange(Math.max(0, offset - limit))}>{t("action.previous")}</button>
+        <button className={btnSecondary} disabled={end >= total} onClick={() => onChange(offset + limit)}>{t("action.next")}</button>
       </span>
     </div>
   );
@@ -91,9 +97,10 @@ const SEVERITY_TONE: Record<string, string> = {
 };
 
 export function SeverityBadge({ severity }: { severity: string }) {
+  const { t } = useT();
   return (
     <span className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${SEVERITY_TONE[severity] ?? SEVERITY_TONE.LOW}`}>
-      {severity.charAt(0) + severity.slice(1).toLowerCase()}
+      {t(`severity.${severity}`) || severity}
     </span>
   );
 }
