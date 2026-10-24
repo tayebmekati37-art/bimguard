@@ -1,0 +1,402 @@
+{
+  "dataset_version": "1.2",
+  "run_started": "2026-10-24T23:13:48.044134+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "measured_rules": [
+    "MISSING_REVISION",
+    "INVALID_REVISION_SEQUENCE",
+    "STALE_DEPENDENCY",
+    "UNREVIEWED_DOWNSTREAM",
+    "MISSING_DEPENDENCY",
+    "NAMING_CONVENTION",
+    "APPROVAL_REQUIRED"
+  ],
+  "per_rule": {
+    "MISSING_REVISION": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "expected_pairs": [
+        [
+          "MISSING_REVISION",
+          "G-100"
+        ]
+      ],
+      "actual_pairs": [
+        [
+          "MISSING_REVISION",
+          "G-100"
+        ]
+      ]
+    },
+    "INVALID_REVISION_SEQUENCE": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "expected_pairs": [
+        [
+          "INVALID_REVISION_SEQUENCE",
+          "G-200"
+        ]
+      ],
+      "actual_pairs": [
+        [
+          "INVALID_REVISION_SEQUENCE",
+          "G-200"
+        ]
+      ]
+    },
+    "STALE_DEPENDENCY": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "expected_pairs": [
+        [
+          "STALE_DEPENDENCY",
+          "S-300"
+        ]
+      ],
+      "actual_pairs": [
+        [
+          "STALE_DEPENDENCY",
+          "S-300"
+        ]
+      ]
+    },
+    "UNREVIEWED_DOWNSTREAM": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "expected_pairs": [
+        [
+          "UNREVIEWED_DOWNSTREAM",
+          "G-700"
+        ]
+      ],
+      "actual_pairs": [
+        [
+          "UNREVIEWED_DOWNSTREAM",
+          "G-700"
+        ]
+      ]
+    },
+    "MISSING_DEPENDENCY": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "expected_pairs": [
+        [
+          "MISSING_DEPENDENCY",
+          "S-400"
+        ]
+      ],
+      "actual_pairs": [
+        [
+          "MISSING_DEPENDENCY",
+          "S-400"
+        ]
+      ]
+    },
+    "NAMING_CONVENTION": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "expected_pairs": [
+        [
+          "NAMING_CONVENTION",
+          "bad-name"
+        ]
+      ],
+      "actual_pairs": [
+        [
+          "NAMING_CONVENTION",
+          "bad-name"
+        ]
+      ]
+    },
+    "APPROVAL_REQUIRED": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "expected_pairs": [
+        [
+          "APPROVAL_REQUIRED",
+          "G-600"
+        ]
+      ],
+      "actual_pairs": [
+        [
+          "APPROVAL_REQUIRED",
+          "G-600"
+        ]
+      ]
+    }
+  },
+  "readiness": [
+    {
+      "project": "eval-clean",
+      "expected": "READY",
+      "actual": "READY",
+      "pass": true
+    },
+    {
+      "project": "eval-problems",
+      "expected": "BLOCKED",
+      "actual": "BLOCKED",
+      "pass": true
+    }
+  ],
+  "unmeasured_fires": [],
+  "results": [
+    {
+      "project_id": "e5a50e00-43de-4ced-9974-5111ddf0af1b",
+      "project_name": "eval-clean",
+      "expected_readiness": "READY",
+      "actual_readiness": "READY",
+      "expected_findings": [],
+      "actual_findings": [],
+      "raw_issues": []
+    },
+    {
+      "project_id": "df99e03c-005a-416b-be73-208eebd0c54d",
+      "project_name": "eval-problems",
+      "expected_readiness": "BLOCKED",
+      "actual_readiness": "BLOCKED",
+      "expected_findings": [
+        [
+          "MISSING_REVISION",
+          "G-100"
+        ],
+        [
+          "INVALID_REVISION_SEQUENCE",
+          "G-200"
+        ],
+        [
+          "STALE_DEPENDENCY",
+          "S-300"
+        ],
+        [
+          "UNREVIEWED_DOWNSTREAM",
+          "G-700"
+        ],
+        [
+          "MISSING_DEPENDENCY",
+          "S-400"
+        ],
+        [
+          "NAMING_CONVENTION",
+          "bad-name"
+        ],
+        [
+          "APPROVAL_REQUIRED",
+          "G-600"
+        ]
+      ],
+      "actual_findings": [
+        [
+          "MISSING_REVISION",
+          "G-100"
+        ],
+        [
+          "APPROVAL_REQUIRED",
+          "G-600"
+        ],
+        [
+          "STALE_DEPENDENCY",
+          "S-300"
+        ],
+        [
+          "UNREVIEWED_DOWNSTREAM",
+          "G-700"
+        ],
+        [
+          "MISSING_DEPENDENCY",
+          "S-400"
+        ],
+        [
+          "NAMING_CONVENTION",
+          "bad-name"
+        ],
+        [
+          "INVALID_REVISION_SEQUENCE",
+          "G-200"
+        ]
+      ],
+      "raw_issues": [
+        {
+          "id": "eddcdafb-83a3-47b2-bd41-ac500c0ffe3b",
+          "run_id": "68b4d4fd-a4c0-4222-9638-7546a75f6798",
+          "rule_id": "MISSING_REVISION",
+          "rule_name": "Missing revision",
+          "category": "revision",
+          "severity": "HIGH",
+          "document_id": "3b756aec-3f28-4441-aa9b-281cde1d59e3",
+          "document_number": "G-100",
+          "element_tag": "",
+          "title": "No revision",
+          "message": "G-100 has no revision, so there is nothing to issue.",
+          "recommended_action": "Upload the first revision of G-100.",
+          "details": {},
+          "status": "open",
+          "acknowledged_by_name": "",
+          "acknowledged_at": null,
+          "acknowledgement_note": ""
+        },
+        {
+          "id": "606cbbc4-8393-4d65-961d-975c6daf8f3f",
+          "run_id": "68b4d4fd-a4c0-4222-9638-7546a75f6798",
+          "rule_id": "APPROVAL_REQUIRED",
+          "rule_name": "Approval required",
+          "category": "approval",
+          "severity": "HIGH",
+          "document_id": "2ca7b286-de5c-498a-a199-f04ab073bca7",
+          "document_number": "G-600",
+          "element_tag": "",
+          "title": "Revision not approved",
+          "message": "G-600 v1 is draft; it needs to be approved or issued before issue.",
+          "recommended_action": "Have a reviewer approve G-600 v1.",
+          "details": {
+            "revision": 1,
+            "status": "draft"
+          },
+          "status": "open",
+          "acknowledged_by_name": "",
+          "acknowledged_at": null,
+          "acknowledgement_note": ""
+        },
+        {
+          "id": "de14adf8-454a-48f1-925e-d03441414e9a",
+          "run_id": "68b4d4fd-a4c0-4222-9638-7546a75f6798",
+          "rule_id": "STALE_DEPENDENCY",
+          "rule_name": "Stale dependency",
+          "category": "dependency",
+          "severity": "HIGH",
+          "document_id": "12506043-9dad-41e1-8039-c09316b8fc68",
+          "document_number": "S-300",
+          "element_tag": "",
+          "title": "Outdated dependency revision",
+          "message": "S-300 (structure) was validated against A-100 v1, but A-100 is now v2.",
+          "recommended_action": "Review S-300 against A-100 v2, update it if needed, then mark the dependency as reviewed.",
+          "details": {
+            "dependency_id": "5be0d0ac-5be0-436e-abea-d5d3f5ffd872",
+            "provider": "A-100",
+            "provider_current_revision": 2,
+            "validated_against_revision": 1,
+            "relationship_type": "depends_on"
+          },
+          "status": "open",
+          "acknowledged_by_name": "",
+          "acknowledged_at": null,
+          "acknowledgement_note": ""
+        },
+        {
+          "id": "4305bd43-004b-460c-b448-825723903df4",
+          "run_id": "68b4d4fd-a4c0-4222-9638-7546a75f6798",
+          "rule_id": "UNREVIEWED_DOWNSTREAM",
+          "rule_name": "Downstream document not reviewed",
+          "category": "dependency",
+          "severity": "MEDIUM",
+          "document_id": "4b757261-98f7-4afc-ad6a-f1e0f338edc6",
+          "document_number": "G-700",
+          "element_tag": "",
+          "title": "Downstream document not reviewed",
+          "message": "G-700 is affected indirectly by A-100 v2 (impact 34.1, medium) and has not been reviewed.",
+          "recommended_action": "Review S-300 against A-100 v2 first, then check G-700.",
+          "details": {
+            "impact_score": 34.1,
+            "impact_severity": "MEDIUM",
+            "via": "S-300"
+          },
+          "status": "open",
+          "acknowledged_by_name": "",
+          "acknowledged_at": null,
+          "acknowledgement_note": ""
+        },
+        {
+          "id": "4c3d4765-c7e3-453e-9349-4315398f0416",
+          "run_id": "68b4d4fd-a4c0-4222-9638-7546a75f6798",
+          "rule_id": "MISSING_DEPENDENCY",
+          "rule_name": "Missing dependency",
+          "category": "dependency",
+          "severity": "MEDIUM",
+          "document_id": "937b9034-b8ed-4f24-bb5c-5a01eb2f3e8e",
+          "document_number": "S-400",
+          "element_tag": "",
+          "title": "Missing dependency",
+          "message": "S-400 (structure) is not linked to any architecture document, so changes to A-100 would not reach it.",
+          "recommended_action": "Register the architecture document S-400 depends on, or disable this check for this discipline.",
+          "details": {
+            "on_discipline": "architecture"
+          },
+          "status": "open",
+          "acknowledged_by_name": "",
+          "acknowledged_at": null,
+          "acknowledgement_note": ""
+        },
+        {
+          "id": "4c7b8399-5d8e-4eda-9006-5fc5b0141ec1",
+          "run_id": "68b4d4fd-a4c0-4222-9638-7546a75f6798",
+          "rule_id": "NAMING_CONVENTION",
+          "rule_name": "Naming convention",
+          "category": "naming",
+          "severity": "MEDIUM",
+          "document_id": "dcb0bb19-0bfc-4695-8d6c-45a6ba429087",
+          "document_number": "bad-name",
+          "element_tag": "",
+          "title": "Naming convention",
+          "message": "'bad-name' does not match the pattern ^[A-Z]{1,2}-\\d{3}[A-Z]?$.",
+          "recommended_action": "Rename bad-name to follow the project's convention.",
+          "details": {},
+          "status": "open",
+          "acknowledged_by_name": "",
+          "acknowledged_at": null,
+          "acknowledgement_note": ""
+        },
+        {
+          "id": "461a5673-c76e-4244-b52c-c8c46a06377e",
+          "run_id": "68b4d4fd-a4c0-4222-9638-7546a75f6798",
+          "rule_id": "INVALID_REVISION_SEQUENCE",
+          "rule_name": "Invalid revision sequence",
+          "category": "revision",
+          "severity": "LOW",
+          "document_id": "401ad99e-fb88-453c-84f4-6b09e7fb3ac1",
+          "document_number": "G-200",
+          "element_tag": "",
+          "title": "Revision numbers skip",
+          "message": "G-200 goes from v1 to v3, skipping 1 revision numbers.",
+          "recommended_action": "Check that no revision is missing from the project, or explain the gap in the change summary.",
+          "details": {
+            "from": 1,
+            "to": 3,
+            "max_gap": 1
+          },
+          "status": "open",
+          "acknowledged_by_name": "",
+          "acknowledged_at": null,
+          "acknowledgement_note": ""
+        }
+      ]
+    }
+  ]
+}

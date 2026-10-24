@@ -1,0 +1,96 @@
+{
+  "version": "1.2",
+  "description": "Labeled dataset for measuring BIMGuard rule accuracy. Labels are by design.",
+  "measured_rules": [
+    "MISSING_REVISION",
+    "INVALID_REVISION_SEQUENCE",
+    "STALE_DEPENDENCY",
+    "UNREVIEWED_DOWNSTREAM",
+    "MISSING_DEPENDENCY",
+    "NAMING_CONVENTION",
+    "APPROVAL_REQUIRED"
+  ],
+  "not_measured": {
+    "READINESS_POLICY": "Config rule. Determines aggregate status rather than emitting a finding. Measured separately as a project-level readiness assertion.",
+    "DUPLICATE_REVISION_CONTENT": "Upload API may reject duplicate checksums before the rule runs. Not reliably constructible via HTTP.",
+    "MISSING_METADATA": "The create-document API auto-fills author from the current authenticated user, so an empty-author document cannot be constructed via HTTP.",
+    "UNRESOLVED_REFERENCE": "Requires bimguard.elements/1 fixtures with element-level BasedOn properties. Deferred to v2.",
+    "SPATIAL_CONFLICT": "Requires real IFC geometry with actual clearance computation. Deferred.",
+    "OUTDATED_REFERENCE": "Requires element-level BasedOn chains across revisions. Deferred.",
+    "PARAMETER_MISMATCH": "Requires coordinated psets across two documents via matching element tags. Deferred.",
+    "CROSS_DOC_TAG_MISSING": "Requires JSON fixtures with distinct element sets across two documents.",
+    "CROSS_DOC_PROPERTY_DIVERGENCE": "Requires JSON fixtures with property-level diffs across two documents.",
+    "CROSS_DOC_TAG_UNEXPECTED": "Requires JSON fixtures with distinct element sets.",
+    "PART_COVERAGE": "Manufacturing-domain only. Deferred to a separate manufacturing evaluation."
+  },
+  "notes": [
+    "UNREVIEWED_DOWNSTREAM fires only on documents reached INDIRECTLY (distance >= 2). Direct consumers are covered by STALE_DEPENDENCY, which is why S-300 is labeled for STALE_DEPENDENCY only, and G-700 (reached through S-300) is labeled for UNREVIEWED_DOWNSTREAM.",
+    "A-100 v2 has real element changes so change detection produces change records and impact analysis produces events for both S-300 (direct) and G-700 (indirect).",
+    "MISSING_METADATA was removed from measured_rules because the API auto-fills the author field before the rule runs."
+  ],
+  "projects": [
+    {
+      "name": "eval-clean",
+      "description": "All rules should stay silent.",
+      "expected_readiness": "READY",
+      "documents": [
+        {"document_number":"A-101","name":"Level 2 Floor Plan","discipline":"architecture","author":"Alice","revisions":[{"content_key":"v1","revision_number":1,"status":"approved","elements":[]}]},
+        {"document_number":"S-201","name":"Level 2 Framing Plan","discipline":"structure","author":"Bob","revisions":[{"content_key":"v1","revision_number":1,"status":"approved","elements":[]}]}
+      ],
+      "dependencies": [
+        {"source_number":"S-201","target_number":"A-101","type":"depends_on","confidence":1.0,"reason":"structure follows architecture"}
+      ],
+      "expected_findings": []
+    },
+    {
+      "name": "eval-problems",
+      "description": "One document per measured rule.",
+      "expected_readiness": "BLOCKED",
+      "documents": [
+        {"document_number":"G-100","name":"No revision","discipline":"general","author":"Alice","revisions":[]},
+        {"document_number":"G-200","name":"Revision gap","discipline":"general","author":"Alice","revisions":[
+          {"content_key":"v1","revision_number":1,"status":"approved","elements":[]},
+          {"content_key":"v3","revision_number":3,"status":"approved","elements":[]}
+        ]},
+        {"document_number":"S-300","name":"Stale direct consumer","discipline":"structure","author":"Alice","revisions":[
+          {"content_key":"v1","revision_number":1,"status":"approved","elements":[]}
+        ]},
+        {"document_number":"S-400","name":"No architecture dep","discipline":"structure","author":"Alice","revisions":[
+          {"content_key":"v1","revision_number":1,"status":"approved","elements":[]}
+        ]},
+        {"document_number":"bad-name","name":"Bad naming","discipline":"general","author":"Alice","revisions":[
+          {"content_key":"v1","revision_number":1,"status":"approved","elements":[]}
+        ]},
+        {"document_number":"G-600","name":"Draft not approved","discipline":"general","author":"Alice","revisions":[
+          {"content_key":"v1","revision_number":1,"status":"draft","elements":[]}
+        ]},
+        {"document_number":"G-700","name":"Indirect consumer","discipline":"general","author":"Alice","revisions":[
+          {"content_key":"v1","revision_number":1,"status":"approved","elements":[]}
+        ]},
+        {"document_number":"A-100","name":"Two-revision provider","discipline":"architecture","author":"Alice","revisions":[
+          {"content_key":"v1","revision_number":1,"status":"approved","elements":[
+            {"id":"guid-wall-a","class":"IfcWall","tag":"W-100","name":"Wall 100","geometry":{"location":[0,0,0]}}
+          ]},
+          {"content_key":"v2","revision_number":2,"status":"approved","elements":[
+            {"id":"guid-wall-a","class":"IfcWall","tag":"W-100","name":"Wall 100","geometry":{"location":[500,0,0]}},
+            {"id":"guid-wall-b","class":"IfcWall","tag":"W-101","name":"Wall 101","geometry":{"location":[1000,0,0]}},
+            {"id":"guid-wall-c","class":"IfcWall","tag":"W-102","name":"Wall 102","geometry":{"location":[1500,0,0]}}
+          ]}
+        ]}
+      ],
+      "dependencies": [
+        {"source_number":"S-300","target_number":"A-100","type":"depends_on","confidence":1.0,"reason":"direct consumer test"},
+        {"source_number":"G-700","target_number":"S-300","type":"depends_on","confidence":0.9,"reason":"chain to indirect impact"}
+      ],
+      "expected_findings": [
+        {"rule_id":"MISSING_REVISION","document_number":"G-100"},
+        {"rule_id":"INVALID_REVISION_SEQUENCE","document_number":"G-200"},
+        {"rule_id":"STALE_DEPENDENCY","document_number":"S-300"},
+        {"rule_id":"UNREVIEWED_DOWNSTREAM","document_number":"G-700"},
+        {"rule_id":"MISSING_DEPENDENCY","document_number":"S-400"},
+        {"rule_id":"NAMING_CONVENTION","document_number":"bad-name"},
+        {"rule_id":"APPROVAL_REQUIRED","document_number":"G-600"}
+      ]
+    }
+  ]
+}

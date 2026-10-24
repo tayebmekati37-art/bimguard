@@ -1,5 +1,7 @@
 # Metrics - methodology and measured results
 
+> **Update (M22):** The rule-accuracy benchmark now exists. See `docs/evaluation/methodology.md` for the methodology and `docs/evaluation/results.md` for the most recent measured numbers. This document is retained for its discussion of what is NOT measured (precision, recall on real projects, cross-machine consistency) and why.
+
 **Nothing in this file is a claim about industry standards.** It reports
 numbers observed on one machine with one synthetic dataset. It is a
 snapshot, not a benchmark suite.
