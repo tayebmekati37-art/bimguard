@@ -1,0 +1,38 @@
+# Reverse proxy override using Caddy instead of nginx.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.proxy-caddy.yml up -d
+#
+# For production, restrict the API port to loopback. See comments in
+# docker-compose.proxy-nginx.yml for the two options.
+
+services:
+  api:
+    # ports: !override
+    #   - "127.0.0.1:8000:8000"
+    environment:
+      TRUST_PROXY_HEADERS: "true"
+
+  proxy:
+    image: caddy:2.8-alpine
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/caddy/certs:/etc/caddy/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  caddy_data:
+  caddy_config:

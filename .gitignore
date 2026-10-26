@@ -11,3 +11,13 @@ storage/
 
 *.db
 *.egg-info/
+
+# TLS certs generated for local proxy testing (see deploy/*/certs/.gitkeep)
+deploy/nginx/certs/*.crt
+deploy/nginx/certs/*.key
+deploy/nginx/certs/*.pem
+deploy/nginx/certs/*.pfx
+deploy/caddy/certs/*.crt
+deploy/caddy/certs/*.key
+deploy/caddy/certs/*.pem
+deploy/caddy/certs/*.pfx

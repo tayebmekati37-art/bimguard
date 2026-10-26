@@ -1,0 +1,67 @@
+# BIMGuard reverse proxy (Caddy 2.6+).
+#
+# Caddy replaces X-Forwarded-For with the client IP by default (does not
+# append), so this file does not need to override that. The reverse_proxy
+# blocks also set X-Real-IP for tools that expect it.
+#
+# Rate limiting uses the rate_limit directive (built into Caddy since 2.6).
+
+{
+    admin off
+    # For local dev with a self-signed cert, do not try to fetch ACME certs.
+    auto_https disable_redirects
+}
+
+:80 {
+    # Health on HTTP for legacy monitors
+    @health path /health
+    handle @health {
+        reverse_proxy api:8000
+    }
+    handle {
+        redir https://{host}{uri} permanent
+    }
+}
+
+:443 {
+    tls /etc/caddy/certs/server.crt /etc/caddy/certs/server.key
+
+    request_body {
+        max_size 60MB
+    }
+
+    # Health: no rate limit
+    @health path /health
+    handle @health {
+        reverse_proxy api:8000
+    }
+
+    # Login: strict per-IP
+    @login path /auth/login
+    handle @login {
+        rate_limit {
+            zone login {
+                key {remote_host}
+                events 5
+                window 1m
+            }
+        }
+        reverse_proxy api:8000 {
+            header_up X-Real-IP {remote_host}
+        }
+    }
+
+    # Everything else: looser per-IP
+    handle {
+        rate_limit {
+            zone api {
+                key {remote_host}
+                events 60
+                window 1m
+            }
+        }
+        reverse_proxy api:8000 {
+            header_up X-Real-IP {remote_host}
+        }
+    }
+}

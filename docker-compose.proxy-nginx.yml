@@ -1,0 +1,44 @@
+# Reverse proxy override for docker-compose.yml.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.proxy-nginx.yml up -d
+#
+# This enables the nginx proxy on :80 and :443, and turns on
+# TRUST_PROXY_HEADERS so the app's rate limiter uses the real client IP
+# from X-Forwarded-For.
+#
+# For production, ALSO restrict the API port to loopback. Two options:
+#
+#   A) Docker Compose 2.24+: uncomment the `ports: !override` block below.
+#   B) Older Compose: edit docker-compose.yml directly and change the api
+#      service `ports: ["8000:8000"]` to `ports: ["127.0.0.1:8000:8000"]`.
+#
+# Without one of these, the API is reachable on :8000 from anywhere the
+# host is reachable, bypassing the proxy and the rate limits.
+
+services:
+  api:
+    # ports: !override
+    #   - "127.0.0.1:8000:8000"
+    environment:
+      # Tell the app to trust the proxy's X-Forwarded-For. Required so the
+      # per-IP rate limiter sees the real client IP, not the proxy's IP.
+      TRUST_PROXY_HEADERS: "true"
+
+  proxy:
+    image: nginx:1.27-alpine
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/certs:/etc/nginx/certs:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
