@@ -438,3 +438,13 @@ export const deactivateProjectProfile = (projectId: string) =>
   request<ProfileActivation>(`/projects/${projectId}/profile`, { method: "DELETE" });
 
 export const logout = () => request<void>("/auth/logout", { method: "POST" });
+
+export async function downloadBcf(runId: string): Promise<void> {
+  const res = await send(`/validation-runs/${runId}/bcf`);
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `bimguard-run-${runId.slice(0, 8)}.bcfzip`;
+  a.click();
+  URL.revokeObjectURL(url);
+}

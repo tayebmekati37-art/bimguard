@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AppShell, useUser } from "@/components/AppShell";
 import { ErrorNote, Field, Modal, Pager, SeverityBadge, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
 import { useT } from "@/lib/i18n";
+import { downloadBcf } from "@/lib/api";
 import {
   acknowledgeIssue, getLatestRun, getProject, listIssues, revokeAcknowledgement, runValidation,
   ApiError, type Page, type Project, type ReadinessStatus, type ValidationIssue, type ValidationRun,
@@ -68,6 +69,7 @@ function ValidationView() {
   const [status, setStatus] = useState("");
   const [offset, setOffset] = useState(0);
   const [acknowledging, setAcknowledging] = useState<ValidationIssue | null>(null);
+  const [bcfBusy, setBcfBusy] = useState(false);
 
   const loadRun = useCallback(() => {
     getProject(id).then(setProject).catch((e) => setError(e.message));
@@ -101,12 +103,25 @@ function ValidationView() {
           <h1 className="text-2xl font-semibold">{t("project.validateForIssue")}</h1>
           <p className="mt-1 text-sm text-muted">{t("validation.description")}</p>
         </div>
-        {canRun && (
-          <button className={btnPrimary} disabled={busy}
-                  onClick={() => act(async () => { setRun(await runValidation(id)); setNone(false); setOffset(0); })}>
-            {busy ? t("validation.validating") : t("project.validateForIssue")}
-          </button>
-        )}
+        <div className="flex shrink-0 gap-2">
+          {run && (
+            <button className={btnSecondary} disabled={bcfBusy} onClick={async () => {
+              if (!run) return;
+              setBcfBusy(true);
+              try { await downloadBcf(run.id); }
+              catch (e) { setError((e as Error).message); }
+              finally { setBcfBusy(false); }
+            }}>
+              {bcfBusy ? t("validation.bcfDownloading") : t("validation.downloadBcf")}
+            </button>
+          )}
+          {canRun && (
+            <button className={btnPrimary} disabled={busy}
+                    onClick={() => act(async () => { setRun(await runValidation(id)); setNone(false); setOffset(0); })}>
+              {busy ? t("validation.validating") : t("project.validateForIssue")}
+            </button>
+          )}
+        </div>
       </div>
       <ErrorNote message={error} />
 

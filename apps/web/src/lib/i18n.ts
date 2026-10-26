@@ -506,6 +506,8 @@ const DICTS: Record<Locale, Record<string, string>> = {
     "validation.acknowledgeTitle": "Acknowledge issue",
     "validation.acknowledgeWarning": "Acknowledging accepts the risk, it does not fix it. The reason is recorded in the audit log and the report. It only applies while the evidence stays the same: a new revision brings the issue back.",
     "validation.reasonLabel": "Reason (at least 5 characters)",
+    "validation.downloadBcf": "Download BCF",
+    "validation.bcfDownloading": "Preparing BCF...",
     // ---------------- M21b-iii-d: compare page
     "compare.title": "Revision comparison",
     "compare.summaryAria": "Summary",
@@ -1135,6 +1137,8 @@ const DICTS: Record<Locale, Record<string, string>> = {
     "validation.acknowledgeTitle": "課題を確認応答",
     "validation.acknowledgeWarning": "確認応答はリスクを受け入れるものであり、修正ではありません。理由は監査ログとレポートに記録されます。証拠が同じ間のみ有効です:新しいリビジョンが課題を再発させます。",
     "validation.reasonLabel": "理由(5 文字以上)",
+    "validation.downloadBcf": "BCF をダウンロード",
+    "validation.bcfDownloading": "BCF 準備中...",
     // ---------------- M21b-iii-d: compare page
     "compare.title": "リビジョン比較",
     "compare.summaryAria": "概要",
