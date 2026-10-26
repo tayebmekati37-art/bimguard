@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,7 @@ from app.models.validation import ValidationIssue, ValidationRun
 from app.schemas.common import Page
 from app.schemas.validation import AcknowledgeRequest, IssueOut, RunOut
 from app.services import validation as service
+from app.services import bcf as bcf_service
 from app.services import notifications as notification_service
 
 router = APIRouter(tags=["validation"])
@@ -116,3 +117,19 @@ def acknowledge_issue(issue_id: str, body: AcknowledgeRequest, db: Session = Dep
 @router.delete("/issues/{issue_id}/acknowledge", response_model=IssueOut)
 def revoke_acknowledgement(issue_id: str, db: Session = Depends(get_db), user: User = Depends(can_acknowledge)) -> IssueOut:
     return _issue_out(service.revoke(db, _issue_or_404(db, issue_id), user))
+
+
+@router.get("/validation-runs/{run_id}/bcf")
+def export_run_bcf(
+    run_id: str,
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+) -> Response:
+    """Export the issues of one validation run as a BCF 2.1 ZIP."""
+    run = _run_or_404(db, run_id)
+    data = bcf_service.build_bcf(db, run)
+    return Response(
+        content=data,
+        media_type="application/vnd.bcf.zip",
+        headers={"Content-Disposition": f'attachment; filename="bimguard-run-{run.id[:8]}.bcfzip"'},
+    )
