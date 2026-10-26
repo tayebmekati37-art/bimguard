@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import models  # noqa: F401  (register tables)
 from app.api import admin, ai, audit, auth, bim, comparisons, dependencies, documents, impact, insights, notifications, permissions, profiles, projects, reports, rules, validation
 from app.core.config import get_settings
-from app.core.security import ensure_secret_is_safe
+from app.core.security import ensure_encryption_declared, ensure_secret_is_safe
 from app.db.session import SessionLocal
 from app.models.document import ImmutableRevisionError
 from app.services import extraction
@@ -39,6 +39,7 @@ async def lifespan(_app: FastAPI):
 
 def create_app() -> FastAPI:
     ensure_secret_is_safe()
+    ensure_encryption_declared()
     app = FastAPI(title="BIMGuard API", version="1.0.0", lifespan=lifespan,
                   description="BIM change-impact and information-consistency engine (prototype).")
 

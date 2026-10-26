@@ -27,6 +27,19 @@ class Settings(BaseSettings):
     # Do not enable this if the API is directly reachable from the internet,
     # because the header can be forged by the client.
     trust_proxy_headers: bool = False
+
+    # Encryption at rest (M24). The application does NOT encrypt data itself.
+    # This setting records the operator's explicit decision so the app can
+    # refuse to start in production when the operator has not made one.
+    #
+    #   none             dev-only default. No encryption guaranteed.
+    #   infrastructure   operator certifies disk-level or database-level
+    #                    encryption is configured (BitLocker, LUKS, RDS
+    #                    encryption, encrypted Docker volume, etc).
+    #
+    # In production/staging, ENCRYPTION_MODE must be set to "infrastructure";
+    # "none" causes a hard startup failure. See docs/architecture/encryption.md.
+    encryption_mode: str = "none"
     # Backup (M20). Operations, not guarantees.
     # backup_dir defaults to <storage_dir>/backups when None.
     backup_dir: str | None = None

@@ -66,3 +66,46 @@ def ensure_secret_is_safe() -> None:
         "JWT_SECRET is the development default. This is fine locally; "
         "set JWT_SECRET before deploying to any shared environment."
     )
+
+_VALID_ENCRYPTION_MODES = frozenset({"none", "infrastructure"})
+
+
+def ensure_encryption_declared() -> None:
+    """Verify the operator has made an explicit encryption decision.
+
+    Does not encrypt anything. Ensures that in production the operator
+    has acknowledged responsibility for at-rest encryption by setting
+    ENCRYPTION_MODE=infrastructure. Fails hard in production if the mode
+    is left at the development default.
+    """
+    s = get_settings()
+    env = s.environment.lower().strip()
+    mode = (s.encryption_mode or "").lower().strip()
+
+    if mode not in _VALID_ENCRYPTION_MODES:
+        raise RuntimeError(
+            f"ENCRYPTION_MODE='{s.encryption_mode}' is not a recognised value. "
+            f"Set to one of: {', '.join(sorted(_VALID_ENCRYPTION_MODES))}. "
+            "See docs/architecture/encryption.md."
+        )
+
+    is_prod = env in ("production", "prod", "staging")
+
+    if is_prod and mode == "none":
+        raise RuntimeError(
+            "ENCRYPTION_MODE is 'none' but ENVIRONMENT is production/staging. "
+            "Configure disk-level or database-level encryption, then set "
+            "ENCRYPTION_MODE=infrastructure. See docs/architecture/encryption.md."
+        )
+
+    if mode == "infrastructure":
+        log.info(
+            "ENCRYPTION_MODE=infrastructure (operator has declared at-rest encryption). "
+            "The application does not verify this. See docs/architecture/encryption.md."
+        )
+    elif not is_prod:
+        log.warning(
+            "ENCRYPTION_MODE is 'none' (development default). "
+            "Data on disk is not encrypted. Set ENCRYPTION_MODE=infrastructure "
+            "and configure disk-level encryption before deploying."
+        )
