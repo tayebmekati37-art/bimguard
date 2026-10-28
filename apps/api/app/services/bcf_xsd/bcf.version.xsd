@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  BIMGuard subset schema for bcf.version.
+  Describes the exact shape produced by app/services/bcf.py:_version_xml.
+  This is NOT the full buildingSMART BCF 2.1 schema. See docs/architecture/bcf.md.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="Version">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="DetailedVersion" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="VersionId" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

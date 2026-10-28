@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  BIMGuard subset schema for viewpoint.bcfv.
+  Describes the exact shape produced by app/services/bcf.py:_viewpoint_xml.
+  This is NOT the full buildingSMART BCF 2.1 schema; it covers a single
+  component selection and default visibility only. See docs/architecture/bcf.md.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="VisualizationInfo">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Components">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Selection">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Component" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:attribute name="IfcGuid" type="xs:string" use="required"/>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="Visibility" minOccurs="0">
+                <xs:complexType>
+                  <xs:attribute name="DefaultVisibility" type="xs:boolean" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="Guid" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
