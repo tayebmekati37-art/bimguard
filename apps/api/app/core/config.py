@@ -23,6 +23,14 @@ class Settings(BaseSettings):
     login_rate_limit_ip_max: int = 20
     login_rate_limit_ip_window_minutes: int = 15
 
+    # Rate-limiting storage backend (M31).
+    #   db    - the login_attempts table (default, M19b behavior)
+    #   redis - Redis counters, one per (email|ip) with TTL windows
+    # The two backends expose identical behaviour and both fail closed if
+    # their store is unreachable. See docs/operations/rate-limiting.md.
+    rate_limit_backend: str = "db"
+    redis_url: str = ""
+
     # Trust X-Forwarded-For only when running behind a trusted reverse proxy.
     # Do not enable this if the API is directly reachable from the internet,
     # because the header can be forged by the client.

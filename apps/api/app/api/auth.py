@@ -14,7 +14,7 @@ from app.models.revoked_token import RevokedToken
 from app.models.user import User
 from app.schemas.auth import TokenOut, UserOut
 from app.services import audit
-from app.services.rate_limit import RateLimiter, get_client_ip
+from app.services.rate_limit import get_client_ip, get_limiter
 
 log = logging.getLogger("bimguard.auth")
 
@@ -29,7 +29,7 @@ def login(
 ) -> TokenOut:
     email = form.username.lower()
     ip = get_client_ip(request)
-    limiter = RateLimiter(db)
+    limiter = get_limiter(db)
 
     try:
         limited = limiter.is_limited(email, ip)

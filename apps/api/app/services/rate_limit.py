@@ -153,6 +153,25 @@ def get_client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
+def get_limiter(db: Session):
+    """Return the configured login rate limiter (M31).
+
+    Default: DB-backed (RateLimiter). Set RATE_LIMIT_BACKEND=redis and
+    REDIS_URL to use RedisRateLimiter. Both expose the same interface
+    (is_limited / retry_after_seconds / record_failure / clear_email_failures)
+    and both fail closed if their store is unreachable.
+    """
+    backend = (get_settings().rate_limit_backend or "db").lower().strip()
+    if backend == "redis":
+        from app.services.rate_limit_redis import RedisRateLimiter, get_redis_client
+        return RedisRateLimiter(get_redis_client(), get_settings())
+    if backend != "db":
+        log.warning(
+            "Unknown RATE_LIMIT_BACKEND=%r; falling back to 'db'. "
+            "Valid values: 'db', 'redis'.", backend,
+        )
+    return RateLimiter(db)
+
 def cleanup_expired(db: Session, older_than_minutes: int = 60) -> int:
     """Delete login_attempt rows older than the given age. Returns count.
 
