@@ -38,13 +38,53 @@ export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
+const REFRESH_KEY = "bimguard.refresh";
+
 export const tokenStore = {
   get: () => (typeof window === "undefined" ? null : window.localStorage.getItem(TOKEN_KEY)),
   set: (t: string) => window.localStorage.setItem(TOKEN_KEY, t),
-  clear: () => window.localStorage.removeItem(TOKEN_KEY),
+  getRefresh: () => (typeof window === "undefined" ? null : window.localStorage.getItem(REFRESH_KEY)),
+  setRefresh: (t: string) => window.localStorage.setItem(REFRESH_KEY, t),
+  clear: () => {
+    if (typeof window === "undefined") return;
+    window.localStorage.removeItem(TOKEN_KEY);
+    window.localStorage.removeItem(REFRESH_KEY);
+  },
 };
 
-async function send(path: string, init: RequestInit = {}): Promise<Response> {
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshAccessToken(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    const refresh = tokenStore.getRefresh();
+    if (!refresh) return false;
+    try {
+      const r = await fetch(`${API_URL}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refresh }),
+      });
+      if (!r.ok) {
+        tokenStore.clear();
+        return false;
+      }
+      const data = await r.json();
+      tokenStore.set(data.access_token);
+      if (data.refresh_token) tokenStore.setRefresh(data.refresh_token);
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
+async function send(path: string, init: RequestInit = {}, _retried = false): Promise<Response> {
   const token = tokenStore.get();
   const headers = new Headers(init.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -53,6 +93,17 @@ async function send(path: string, init: RequestInit = {}): Promise<Response> {
     res = await fetch(`${API_URL}${path}`, { ...init, headers });
   } catch {
     throw new ApiError(0, `Cannot reach the BIMGuard API at ${API_URL}. Check that it is running.`);
+  }
+  // Transparent refresh-and-retry on 401. Skip login/refresh so a bad
+  // password or a rejected refresh does not loop.
+  if (
+    res.status === 401 &&
+    !_retried &&
+    !path.startsWith("/auth/login") &&
+    !path.startsWith("/auth/refresh")
+  ) {
+    const refreshed = await tryRefreshAccessToken();
+    if (refreshed) return send(path, init, true);
   }
   if (!res.ok) {
     let detail = `Request failed (${res.status}).`;
@@ -87,8 +138,9 @@ const qs = (params: Record<string, string | number | boolean | undefined>) => {
 
 export async function login(email: string, password: string): Promise<void> {
   const body = new URLSearchParams({ username: email, password });
-  const data = await request<{ access_token: string }>("/auth/login", { method: "POST", body });
+  const data = await request<{ access_token: string; refresh_token?: string }>("/auth/login", { method: "POST", body });
   tokenStore.set(data.access_token);
+  if (data.refresh_token) tokenStore.setRefresh(data.refresh_token);
 }
 
 export const getMe = () => request<User>("/auth/me");
@@ -437,7 +489,15 @@ export const activateProjectProfile = (projectId: string, profileId: string) =>
 export const deactivateProjectProfile = (projectId: string) =>
   request<ProfileActivation>(`/projects/${projectId}/profile`, { method: "DELETE" });
 
-export const logout = () => request<void>("/auth/logout", { method: "POST" });
+export async function logout(): Promise<void> {
+  const refresh = tokenStore.getRefresh();
+  const body = refresh ? { refresh_token: refresh } : {};
+  try {
+    await request<void>("/auth/logout", jsonInit("POST", body));
+  } catch {
+    // Best-effort. The caller clears local tokens regardless.
+  }
+}
 
 export async function downloadBcf(runId: string): Promise<void> {
   const res = await send(`/validation-runs/${runId}/bcf`);
