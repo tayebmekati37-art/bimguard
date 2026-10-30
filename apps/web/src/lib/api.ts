@@ -508,3 +508,17 @@ export async function downloadBcf(runId: string): Promise<void> {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+export interface SessionRecord {
+  family_id: string;
+  started_at: string;
+  last_active_at: string;
+  expires_at: string;
+  rotation_count: number;
+  is_current: boolean;
+}
+export const listSessions = () => request<SessionRecord[]>("/auth/sessions");
+export const revokeSession = (familyId: string) =>
+  request<void>(`/auth/sessions/${familyId}`, { method: "DELETE" });
+export const revokeAllSessions = (keepCurrent: boolean = true) =>
+  request<void>(`/auth/sessions?keep_current=${keepCurrent}`, { method: "DELETE" });

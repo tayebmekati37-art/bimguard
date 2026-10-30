@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-only-secret-change-me-use-at-least-32-bytes"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
+    # Refresh-token lifetime (M32). Refresh tokens are rotated on each use;
+    # the family survives across rotations until logout or reuse detection.
+    refresh_token_expire_days: int = 30
     environment: str = "development"
     log_level: str = "INFO"
     ai_enabled: bool = False

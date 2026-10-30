@@ -90,6 +90,87 @@ outcome.
 - CAPTCHA challenge after failures
 - Exponential backoff (fixed window, not sliding or backoff)
 - Distributed throttling beyond what the database provides
+## Refresh tokens (M32)
+
+Access tokens are short-lived (60 min by default). To keep users logged in
+without re-entering a password, login also returns a refresh token.
+
+### Refresh-token lifecycle
+
+- **Storage** — only the SHA-256 hash is stored. The raw token is returned exactly once, at creation.
+- **Family** — every refresh token belongs to a family (one family per login). Rotation keeps the family id; logout revokes the whole family.
+- **Rotation** — `POST /auth/refresh` revokes the presented token and issues a new one in the same family.
+- **Reuse detection** — presenting a token that is already revoked revokes the entire family. This is a defensive measure: if an attacker stole an old refresh token and uses it, both the attacker and the legitimate user are logged out. Strict by design; documented as an intentional tradeoff.
+- **Expiry** — refresh tokens expire after `REFRESH_TOKEN_EXPIRE_DAYS` (default 30). Expiry is per-token; there is no family-level TTL beyond the individual tokens.
+
+### Endpoints
+
+- `POST /auth/login` — form-encoded; returns `{access_token, refresh_token, token_type, expires_in}`
+- `POST /auth/refresh` — JSON `{refresh_token}`; returns a new pair
+- `POST /auth/logout` — optional JSON `{refresh_token}`; revokes the family of that token, plus the access-token jti
+
+### Concurrent refresh from multiple tabs
+
+If two browser tabs each try to refresh with the same token, only one will succeed. The second hit triggers reuse detection (the token was just revoked by the first) and revokes the family. Both tabs are logged out. This is standard strict rotation behavior, and the frontend mitigates it by memoizing the refresh promise — two concurrent 401s trigger one `/auth/refresh` call, not two.
+
+### Session management (M33)
+
+Users can view and revoke their active sessions (refresh-token families).
+
+### Endpoints
+
+- `GET /auth/sessions` — list the current user's active families. Marks the current one using the `fam` claim added to access tokens by M33.
+- `DELETE /auth/sessions/{family_id}` — revoke one family. Returns 404 if the family does not belong to the current user (avoids confirming existence across users).
+- `DELETE /auth/sessions?keep_current=true|false` — revoke all families. Default `true` keeps the current device signed in; `false` revokes everything including the current access token's jti.
+
+### Current-session detection
+
+Access tokens issued at login or refresh since M33 carry a `fam` claim (the refresh family id). `GET /auth/sessions` marks the token's own family as current. Tokens issued before M33 have no `fam`; they list sessions without a current marker. `DELETE /auth/sessions?keep_current=true` returns 400 if the caller's token has no `fam` — safer than silently revoking the current session.
+
+The transition window is 60 minutes (access token lifetime). After that, all live tokens carry the claim.
+
+### Session ownership
+
+The family id is a UUID. A user cannot revoke another user's family: the endpoint queries `WHERE family_id = X AND user_id = current_user` and returns 404 if no match. There is no "admin can revoke any session" path — out of scope.
+
+### What this does NOT provide
+
+- **Admin session management** — no admin can see or revoke a user's sessions.
+- **Device metadata** — sessions show timestamps and rotation count, not user-agent or IP. Those would need to be captured at login and stored on the family row.
+- **Notifications on session revoke** — a user whose session was revoked finds out on the next request (401), not proactively.
+- **"Suspicious activity" alerts** — no anomaly detection on session creation.
+## What this milestone does NOT provide
+
+- **Per-token revocation UI** — users cannot see or revoke individual refresh tokens; they must use logout (per-family) or a future "log out everywhere" endpoint.
+- **Sliding expiry** — the token's `expires_at` is fixed at creation. Rotating does not extend it.
+- **Device/session tracking** — the family id is opaque; there is no user-facing device list.
+- **Grace window** — strict rotation means a token presented even 1 second after rotation is treated as reuse. A small grace window (accept the just-rotated token for ~30s and return the same successor) is a common refinement; not implemented here because it complicates the family-revocation contract.
+## Session management (M33)
+
+Users can view and revoke their active sessions (refresh-token families).
+
+### Endpoints
+
+- `GET /auth/sessions` — list the current user's active families. Marks the current one using the `fam` claim added to access tokens by M33.
+- `DELETE /auth/sessions/{family_id}` — revoke one family. Returns 404 if the family does not belong to the current user (avoids confirming existence across users).
+- `DELETE /auth/sessions?keep_current=true|false` — revoke all families. Default `true` keeps the current device signed in; `false` revokes everything including the current access token's jti.
+
+### Current-session detection
+
+Access tokens issued at login or refresh since M33 carry a `fam` claim (the refresh family id). `GET /auth/sessions` marks the token's own family as current. Tokens issued before M33 have no `fam`; they list sessions without a current marker. `DELETE /auth/sessions?keep_current=true` returns 400 if the caller's token has no `fam` — safer than silently revoking the current session.
+
+The transition window is 60 minutes (access token lifetime). After that, all live tokens carry the claim.
+
+### Session ownership
+
+The family id is a UUID. A user cannot revoke another user's family: the endpoint queries `WHERE family_id = X AND user_id = current_user` and returns 404 if no match. There is no "admin can revoke any session" path — out of scope.
+
+### What this does NOT provide
+
+- **Admin session management** — no admin can see or revoke a user's sessions.
+- **Device metadata** — sessions show timestamps and rotation count, not user-agent or IP. Those would need to be captured at login and stored on the family row.
+- **Notifications on session revoke** — a user whose session was revoked finds out on the next request (401), not proactively.
+- **"Suspicious activity" alerts** — no anomaly detection on session creation.
 ## What this milestone does NOT provide
 
 - No refresh tokens (the app issues access tokens only)

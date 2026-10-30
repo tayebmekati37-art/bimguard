@@ -22,16 +22,30 @@ def _is_revoked(db: Session, jti: str) -> bool:
     return db.get(RevokedToken, jti) is not None
 
 
-def get_current_user(token: str = Depends(oauth2), db: Session = Depends(get_db)) -> User:
-    try:
-        payload = decode_access_token(token)
-    except jwt.PyJWTError:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token. Please sign in again.")
+def get_token_payload(token: str = Depends(oauth2)) -> dict:
+    """Decode and return the JWT claims. Raises 401 on invalid or expired token.
 
+    M33: factored out of get_current_user so endpoints that need the raw
+    claims (like /auth/sessions reading `fam`) can depend on this without
+    duplicating the decode. FastAPI caches the dependency per request, so
+    endpoints depending on both get_current_user and get_token_payload
+    trigger exactly one decode.
+    """
+    try:
+        return decode_access_token(token)
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "Invalid or expired token. Please sign in again.",
+        )
+
+
+def get_current_user(
+    payload: dict = Depends(get_token_payload),
+    db: Session = Depends(get_db),
+) -> User:
     jti = payload.get("jti")
     if not isinstance(jti, str) or not jti:
-        # Tokens issued before M19a lack a jti. Reject them rather than
-        # accept unrevocable tokens indefinitely. Users sign in once more.
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
             "Token is missing a session identifier. Please sign in again.",

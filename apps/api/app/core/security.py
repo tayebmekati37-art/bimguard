@@ -24,19 +24,21 @@ def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
 
-def create_access_token(subject: str, role: str) -> str:
+def create_access_token(subject: str, role: str, family_id: str | None = None) -> str:
     s = get_settings()
     exp = datetime.now(UTC) + timedelta(minutes=s.jwt_expire_minutes)
-    return jwt.encode(
-        {
-            "sub": subject,
-            "role": role,
-            "exp": exp,
-            "jti": uuid.uuid4().hex,
-        },
-        s.jwt_secret,
-        s.jwt_algorithm,
-    )
+    payload = {
+        "sub": subject,
+        "role": role,
+        "exp": exp,
+        "jti": uuid.uuid4().hex,
+    }
+    if family_id:
+        # M33: ties the access token to its refresh family so /auth/sessions
+        # can mark this device as the current one. Optional for backward
+        # compatibility with callers that only need the jti.
+        payload["fam"] = family_id
+    return jwt.encode(payload, s.jwt_secret, s.jwt_algorithm)
 
 
 def decode_access_token(token: str) -> dict:

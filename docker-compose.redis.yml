@@ -1,0 +1,34 @@
+# Redis for rate limiting (M31).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d
+#
+# Adds a Redis service and switches the API to use it for login rate
+# limiting. To use Redis without starting it here (e.g. you already run
+# Redis elsewhere), just set RATE_LIMIT_BACKEND=redis and REDIS_URL in
+# apps/api/.env and skip this file.
+#
+# Redis is configured as a cache (no persistence). Rate limit counters are
+# intentionally ephemeral: a Redis restart resets counters, which is safer
+# than restoring stale blocks. See docs/operations/rate-limiting.md.
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  api:
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      RATE_LIMIT_BACKEND: "redis"
+      REDIS_URL: "redis://redis:6379/0"

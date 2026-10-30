@@ -22,7 +22,47 @@ This layer stops:
 
 It does **not** stop a determined attacker rotating IPs. For that, layer 2.
 
-## Layer 2 — application (M19b)
+## Layer 2 — application (M19b, M31)
+
+Two interchangeable backends:
+
+- **DB (default)** — `login_attempts` table. Sliding window based on `attempted_at`. No extra infrastructure.
+- **Redis** — fixed window per (email) and per (IP), using INCR + EXPIRE. Faster at scale, no DB writes on failed logins. Requires a Redis instance.
+
+Switch by setting env vars:
+
+    RATE_LIMIT_BACKEND=redis
+    REDIS_URL=redis://localhost:6379/0
+
+Or run with the Redis compose override:
+
+    docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d
+
+Both backends expose the identical interface (`is_limited`, `retry_after_seconds`, `record_failure`, `clear_email_failures`) and both fail closed if their store is unreachable. In production, failure of either returns 503 on login, never lets a rate-limited attempt through.
+
+### Which backend to choose
+
+- **Single-host deployment, low login volume** — DB backend. No extra service to operate.
+- **Multi-worker / multi-replica deployment** — Redis. The DB backend works across workers too, but every failed login is a write; at high volume this contends with real traffic.
+- **Temporary Redis outage** — both backends fail closed. The 503 is intentional. A rate limiter that silently allows traffic during its own outage is worse than one that refuses.
+
+### Redis specifics
+
+- **Fixed window, not sliding.** If the first failure is at T, the window closes at T+15m. Failures that arrive near the end of the window count against the same window, which can feel slightly harsher than a sliding window near a boundary. This is standard for `INCR`-based limiters (nginx's `limit_req` is similar).
+- **No persistence.** Redis is started with `--save "" --appendonly no` in the compose override. Rate limit state is lost on restart. That is correct: a restart is an opportunity to unblock users who were rate-limited before the restart, not an outage.
+- **Key format** — `bimguard:login:email:{email}` and `bimguard:login:ip:{ip}`. Easy to inspect with `redis-cli --scan --pattern 'bimguard:login:*'`.
+- **TTL** — set on first INCR only, not on every INCR. This is what makes it a fixed window rather than a sliding one.
+- **Timeout** — the redis-py client uses a default socket timeout of 5s. If Redis is slow but reachable, logins stall for up to 5s before the 503. Override with `REDIS_SOCKET_TIMEOUT_SECONDS` if needed.
+
+### Migrating between backends
+
+Both are pure counters. There is nothing to migrate:
+
+- DB → Redis: set the env vars and restart the API. Existing `login_attempts` rows become inert (the DB-backend code path is not called) but harmless. You can leave them, or clean with `scripts/cleanup_login_attempts.py`.
+- Redis → DB: unset the env vars and restart. Redis counters remain until their TTL, harmless. No cleanup needed.
+
+Rate limit state is ephemeral by design; it does not warrant migration tooling.
+
 
 Database-backed per-account and per-IP limits on the login endpoint.
 
