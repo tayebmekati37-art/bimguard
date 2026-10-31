@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
@@ -20,6 +20,7 @@ from app.schemas.document import (
 from app.schemas.interop import RoundTripReportOut, SourceVerificationReportOut
 from app.services import audit, extraction, revisions, storage
 from app.services import interop
+from app.services import ifc_export
 
 router = APIRouter(tags=["documents"])
 can_edit = require_roles(Role.ADMIN, Role.BIM_COORDINATOR, Role.ENGINEER)
@@ -272,3 +273,31 @@ def verify_source(
         missing=report.missing,
         extra=report.extra,
     )
+
+@router.get("/revisions/{revision_id}/export.ifc")
+def export_revision_ifc(
+    revision_id: str,
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+) -> Response:
+    """Export the revision's elements as a valid IFC4 file.
+
+    The file contains element identity (class, tag, name, level, room,
+    material) and property sets, in a Project -> Site -> Building ->
+    Storey hierarchy. It does NOT contain geometry: elements have no
+    shape representation. It opens in any IFC viewer and shows the
+    element tree and psets, but nothing is visible in the 3D view.
+
+    Round-trip: re-reading the file with IfcProvider yields the same
+    element set (by tag), class, name, level, room, material and psets.
+    See docs/architecture/ifc-export.md.
+    """
+    revision = _revision_or_404(db, revision_id)
+    result = ifc_export.export_revision_to_ifc(db, revision)
+    filename = f"revision-{revision.revision_number}-v{revision.revision_number}.ifc"
+    return Response(
+        content=result.content,
+        media_type="model/ifc",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
