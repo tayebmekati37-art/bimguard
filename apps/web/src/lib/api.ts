@@ -522,3 +522,13 @@ export const revokeSession = (familyId: string) =>
   request<void>(`/auth/sessions/${familyId}`, { method: "DELETE" });
 export const revokeAllSessions = (keepCurrent: boolean = true) =>
   request<void>(`/auth/sessions?keep_current=${keepCurrent}`, { method: "DELETE" });
+
+export async function downloadRevisionIfc(revisionId: string, revisionNumber: number): Promise<void> {
+  const res = await send(`/revisions/${revisionId}/export.ifc`);
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `revision-v${revisionNumber}.ifc`;
+  a.click();
+  URL.revokeObjectURL(url);
+}

@@ -33,6 +33,25 @@ class Settings(BaseSettings):
     # their store is unreachable. See docs/operations/rate-limiting.md.
     rate_limit_backend: str = "db"
     redis_url: str = ""
+    # Secret provider (M30). See docs/architecture/secrets.md.
+    #   env                  environment variables (default, M1-M29 behavior)
+    #   aws_secrets_manager  AWS Secrets Manager (pip install '.[aws]')
+    #   azure_key_vault      Azure Key Vault (pip install '.[azure]')
+    #
+    # KMS is often involved as the encryption backing for these services,
+    # but KMS itself is not fetched at runtime — that would be an encryption
+    # key, not a JWT signing secret.
+    secret_provider: str = "env"
+    # Cache lifetime for secrets fetched from a remote provider. Rotating a
+    # secret requires waiting this long (or restarting) for the new value to
+    # be used. Env provider values are effectively cached anyway because
+    # get_settings() is lru_cached.
+    secret_cache_seconds: int = 3600
+    # AWS Secrets Manager (name or ARN of the secret containing JWT_SECRET)
+    aws_region: str = ""
+    aws_secret_name: str = ""
+    # Azure Key Vault (e.g. https://myvault.vault.azure.net/)
+    azure_vault_url: str = ""
 
     # Trust X-Forwarded-For only when running behind a trusted reverse proxy.
     # Do not enable this if the API is directly reachable from the internet,

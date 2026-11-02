@@ -59,6 +59,11 @@ this stack supports: it proves the stored extraction still agrees with
 the file. It is not a re-upload, and it does not re-run the change
 detection or impact analysis.
 
+## IFC export (M34)
+
+`GET /revisions/{id}/export.ifc` writes element identity and property sets as a valid IFC4 file, without geometry. See `docs/architecture/ifc-export.md` for the exact subset, round-trip guarantees, and known limits.
+
+The M15 JSON export and the M34 IFC export are complementary: JSON is a portable full-data dump, IFC is element metadata in a format other tools can open.
 ## What this milestone does NOT ship
 
 ### IFC export

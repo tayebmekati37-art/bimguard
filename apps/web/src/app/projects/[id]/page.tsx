@@ -9,7 +9,7 @@ import { HealthPanel } from "@/components/HealthPanel";
 import { ErrorNote, Field, Modal, Pager, StatusBadge, btnDanger, btnPrimary, btnSecondary, inputCls, useDebounced } from "@/components/ui";
 import { useT } from "@/lib/i18n";
 import {
-  createDocument, deleteProject, downloadRevision, getProject, getProjectHealth, listDocuments, listRevisions, reextractRevision, setRevisionStatus,
+  createDocument, deleteProject, downloadRevision, downloadRevisionIfc, getProject, getProjectHealth, listDocuments, listRevisions, reextractRevision, setRevisionStatus,
   updateProject, uploadRevision, type Discipline, type DocumentRecord, type Page, type Project, type ProjectHealth, type Revision, type RevisionStatus,
 } from "@/lib/api";
 import { DISCIPLINES, FILE_TYPES, STATUSES, STATUS_TRANSITIONS, can, formatDate, formatSize } from "@/lib/labels";
@@ -201,6 +201,7 @@ function HistoryDialog({ doc, onClose, onChanged }: { doc: DocumentRecord; onClo
                 <td className="max-w-[14rem]">{r.change_summary || <span className="text-muted">{t("project.none")}</span>}</td>
                 <td className="space-y-1 text-right">
                   {r.extraction_status === "ok" && <button className={btnSecondary} onClick={() => setViewing(r)}>{t("project.btnElements")}</button>}
+                  {r.extraction_status === "ok" && <button className={`${btnSecondary} ml-1`} disabled={busy} onClick={() => run(() => downloadRevisionIfc(r.id, r.revision_number))}>{t("project.downloadIfc")}</button>}
                   {r.extraction_status === "ok" && r.previous_revision_id && (
                     <Link href={`/revisions/${r.id}/compare`} className={`${btnSecondary} ml-1 inline-block`}>{t("project.btnChanges")}</Link>
                   )}
