@@ -5,12 +5,12 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent.parent.parent / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent / "scripts"))
 
 import importlib.util
 _spec = importlib.util.spec_from_file_location(
     "eval_from_labels",
-    Path(__file__).resolve().parent.parent.parent.parent.parent / "scripts" / "eval-from-labels.py",
+    Path(__file__).resolve().parent.parent.parent.parent / "scripts" / "eval-from-labels.py",
 )
 eval_from_labels = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(eval_from_labels)

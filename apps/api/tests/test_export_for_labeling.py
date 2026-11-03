@@ -10,7 +10,7 @@ from pathlib import Path
 
 _spec = importlib.util.spec_from_file_location(
     "export_for_labeling",
-    Path(__file__).resolve().parent.parent.parent.parent.parent / "scripts" / "export-for-labeling.py",
+    Path(__file__).resolve().parent.parent.parent.parent / "scripts" / "export-for-labeling.py",
 )
 export_for_labeling = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(export_for_labeling)
