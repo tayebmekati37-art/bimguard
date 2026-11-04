@@ -23,8 +23,7 @@ class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
     __table_args__ = (
         Index("ix_refresh_tokens_user_family", "user_id", "family_id"),
-        Index("ix_refresh_tokens_expires_at", "expires_at"),
-    )
+        )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
