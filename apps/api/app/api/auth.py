@@ -1,20 +1,29 @@
 import logging
 from datetime import UTC, datetime
 
-import jwt
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, oauth2
-from app.core.security import create_access_token, decode_access_token, verify_password
+from app.api.deps import get_current_user, get_token_payload
+from app.core.config import get_settings
+from app.core.security import create_access_token, verify_password
 from app.db.session import get_db
+from app.models.refresh_token import RefreshToken
 from app.models.revoked_token import RevokedToken
 from app.models.user import User
-from app.schemas.auth import TokenOut, UserOut
+from app.schemas.auth import RefreshRequest, SessionOut, TokenOut, UserOut
 from app.services import audit
 from app.services.rate_limit import get_client_ip, get_limiter
+from app.services.refresh_tokens import (
+    RefreshTokenError,
+    issue_refresh_token,
+    list_sessions_for_user,
+    revoke_family_by_id,
+    revoke_family_of,
+    rotate,
+)
 
 log = logging.getLogger("bimguard.auth")
 
@@ -50,17 +59,22 @@ def login(
 
     user = db.scalar(select(User).where(User.email == email))
     if user is None or not user.is_active or not verify_password(form.password, user.password_hash):
-        # Record the failure and commit before raising, so the row is
-        # visible to the next request.
         limiter.record_failure(email, ip)
         db.commit()
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Incorrect email or password.")
 
-    # Successful login: a user's own typos should not accumulate.
     limiter.clear_email_failures(email)
+    raw_refresh, refresh_row = issue_refresh_token(db, user)
     audit.record(db, user=user, action="auth.login", entity_type="user", entity_id=user.id)
     db.commit()
-    return TokenOut(access_token=create_access_token(user.id, user.role.value))
+    return TokenOut(
+        access_token=create_access_token(
+            user.id, user.role.value, family_id=refresh_row.family_id,
+        ),
+        refresh_token=raw_refresh,
+        token_type="bearer",
+        expires_in=get_settings().jwt_expire_minutes * 60,
+    )
 
 
 @router.get("/me", response_model=UserOut)
@@ -70,31 +84,136 @@ def me(user: User = Depends(get_current_user)) -> User:
 
 @router.post("/logout", status_code=204)
 def logout(
-    token: str = Depends(oauth2),
+    body: RefreshRequest | None = Body(default=None),
+    payload: dict = Depends(get_token_payload),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Response:
-    """Revoke the calling token's jti until its natural expiry.
+    if body and body.refresh_token:
+        n = revoke_family_of(db, body.refresh_token)
+        if n > 0:
+            log.info("logout: revoked %d refresh token(s) for user %s", n, user.id)
 
-    Idempotent: revoking an already-revoked token is a no-op. Only the
-    caller's own session is revoked; other sessions of the same user are
-    unaffected.
-    """
-    try:
-        payload = decode_access_token(token)
-    except jwt.PyJWTError:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token.")
     jti = payload.get("jti")
     exp = payload.get("exp")
-    if not isinstance(jti, str) or not jti or not isinstance(exp, (int, float)):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token is missing required claims.")
-    if db.get(RevokedToken, jti) is None:
-        db.add(
-            RevokedToken(
+    if isinstance(jti, str) and jti and isinstance(exp, (int, float)):
+        if db.get(RevokedToken, jti) is None:
+            db.add(RevokedToken(
                 jti=jti,
                 expires_at=datetime.fromtimestamp(exp, tz=UTC),
-            )
-        )
-        audit.record(db, user=user, action="auth.logout", entity_type="user", entity_id=user.id)
+            ))
+            audit.record(db, user=user, action="auth.logout", entity_type="user", entity_id=user.id)
+    db.commit()
+    return Response(status_code=204)
+
+
+@router.post("/refresh", response_model=TokenOut)
+def refresh(body: RefreshRequest, db: Session = Depends(get_db)) -> TokenOut:
+    try:
+        user, raw_new, new_row = rotate(db, body.refresh_token)
+    except RefreshTokenError as exc:
         db.commit()
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, str(exc)) from exc
+
+    audit.record(db, user=user, action="auth.refresh", entity_type="user", entity_id=user.id)
+    db.commit()
+    return TokenOut(
+        access_token=create_access_token(
+            user.id, user.role.value, family_id=new_row.family_id,
+        ),
+        refresh_token=raw_new,
+        token_type="bearer",
+        expires_in=get_settings().jwt_expire_minutes * 60,
+    )
+
+
+@router.get("/sessions", response_model=list[SessionOut])
+def list_sessions(
+    payload: dict = Depends(get_token_payload),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[dict]:
+    current_family = payload.get("fam")
+    if not isinstance(current_family, str):
+        current_family = None
+    return list_sessions_for_user(db, user, current_family)
+
+
+@router.delete("/sessions/{family_id}", status_code=204)
+def revoke_session(
+    family_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Response:
+    exists = db.scalar(
+        select(RefreshToken.id)
+        .where(
+            RefreshToken.family_id == family_id,
+            RefreshToken.user_id == user.id,
+        )
+        .limit(1)
+    )
+    if exists is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
+
+    n = revoke_family_by_id(db, family_id)
+    audit.record(
+        db, user=user, action="auth.session_revoked", entity_type="refresh_family",
+        entity_id=family_id, detail={"tokens_revoked": n},
+    )
+    db.commit()
+    return Response(status_code=204)
+
+
+@router.delete("/sessions", status_code=204)
+def revoke_all_sessions(
+    keep_current: bool = Query(True),
+    payload: dict = Depends(get_token_payload),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Response:
+    current_family = payload.get("fam")
+    if not isinstance(current_family, str):
+        current_family = None
+
+    if keep_current and current_family is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Cannot identify the current session (token issued before session tracking "
+            "was enabled). Sign in again, or set keep_current=false to revoke every session.",
+        )
+
+    families = list(db.scalars(
+        select(RefreshToken.family_id)
+        .where(RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None))
+        .distinct()
+    ))
+    revoked_tokens = 0
+    revoked_families = 0
+    for fid in families:
+        if keep_current and fid == current_family:
+            continue
+        revoked_tokens += revoke_family_by_id(db, fid)
+        revoked_families += 1
+
+    if not keep_current:
+        jti = payload.get("jti")
+        exp = payload.get("exp")
+        if isinstance(jti, str) and jti and isinstance(exp, (int, float)):
+            if db.get(RevokedToken, jti) is None:
+                db.add(RevokedToken(
+                    jti=jti,
+                    expires_at=datetime.fromtimestamp(exp, tz=UTC),
+                ))
+
+    audit.record(
+        db, user=user, action="auth.sessions_revoked_all", entity_type="user",
+        entity_id=user.id,
+        detail={
+            "families_revoked": revoked_families,
+            "tokens_revoked": revoked_tokens,
+            "keep_current": keep_current,
+        },
+    )
+    db.commit()
     return Response(status_code=204)
