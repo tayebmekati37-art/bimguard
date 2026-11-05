@@ -87,6 +87,15 @@ def export_revision_to_ifc(
 ) -> IfcExportResult:
     import ifcopenshell
     import ifcopenshell.api
+    # M34: submodules are lazily loaded in ifcopenshell>=0.8; explicit imports
+    # are required so api.project / .root / .unit / .aggregate / .spatial /
+    # .pset resolve at call time.
+    import ifcopenshell.api.project  # noqa: F401
+    import ifcopenshell.api.root  # noqa: F401
+    import ifcopenshell.api.unit  # noqa: F401
+    import ifcopenshell.api.aggregate  # noqa: F401
+    import ifcopenshell.api.spatial  # noqa: F401
+    import ifcopenshell.api.pset  # noqa: F401
 
     elements = list(db.scalars(
         select(BimElement).where(BimElement.revision_id == revision.id)
