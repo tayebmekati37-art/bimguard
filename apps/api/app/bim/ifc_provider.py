@@ -94,6 +94,10 @@ class IfcProvider(BIMProvider):
                 dimensions[key] = round(float(value) * self._mm_per_unit, 3)
 
         level, room = self._spatial(entity)
+        # M34: fall back to the exported pset when spatial containment
+        # does not provide a room (elements are placed in storeys, not rooms).
+        if room is None:
+            room = properties.get("BIMGuardElement.Room")
         name = entity.Name or ""
         tag = getattr(entity, "Tag", None) or ""
         if entity.is_a("IfcSpace"):

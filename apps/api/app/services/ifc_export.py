@@ -130,6 +130,12 @@ def export_revision_to_ifc(
         storey = storeys[level_name]
         for elem in levels[level_name]:
             props = _flatten_props(dict(elem.properties or {}))
+            # M34: persist room and material as psets so the reader
+            # (IfcProvider) can recover them after round-trip.
+            if elem.room:
+                props["BIMGuardElement.Room"] = elem.room
+            if elem.material:
+                props["BIMGuardElement.Material"] = elem.material
             source_class = elem.ifc_class or ""
 
             entity = None
