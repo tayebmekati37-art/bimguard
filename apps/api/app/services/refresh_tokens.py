@@ -96,7 +96,8 @@ def rotate(db: Session, raw: str) -> tuple[User, str, RefreshToken]:
             "Refresh token has already been used. All sessions in this family have been revoked."
         )
 
-    if row.expires_at < datetime.now(UTC):
+    exp = _aware(row.expires_at)
+    if exp is not None and exp < datetime.now(UTC):
         raise RefreshTokenError("Refresh token has expired.")
 
     user = db.get(User, row.user_id)
