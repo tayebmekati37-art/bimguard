@@ -26,7 +26,7 @@ test.describe("Demo flow - UI", () => {
     await expect(page.getByText(/project health/i).first()).toBeVisible({ timeout: 10_000 });
 
     // The main action links are present
-    await expect(page.getByRole("link", { name: /validate for issue/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /validate for issue/i }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: /^impact$/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /^dependencies$/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /^reports$/i })).toBeVisible();
@@ -45,7 +45,7 @@ test.describe("Demo flow - UI", () => {
     await page.goto(`/projects/${project.id}/reports`);
     await page.waitForLoadState("networkidle");
 
-    await expect(page.getByText(/NOT_VALIDATED|READY|BLOCKED/i).first()).toBeVisible({
+    await expect(page.getByText(/not yet validated|ready|blocked/i).first()).toBeVisible({
       timeout: 10_000,
     });
     await expect(page.getByRole("button", { name: /download json/i })).toBeVisible();

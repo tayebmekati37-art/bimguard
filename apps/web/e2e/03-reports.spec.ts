@@ -13,7 +13,7 @@ test.describe("Reports page", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(page.getByRole("heading", { name: /reports/i }).first()).toBeVisible();
-    await expect(page.getByText(/NOT_VALIDATED|READY|BLOCKED/).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/not yet validated|ready|blocked/i).first()).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole("button", { name: /download json/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /download csv/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /download pdf/i })).toBeVisible();
