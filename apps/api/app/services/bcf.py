@@ -92,4 +92,20 @@ def build_bcf(db: Session, run: ValidationRun) -> bytes:
             guid = _resolve_guid(db, issue)
             if guid:
                 zf.writestr(f"{issue.id}/viewpoint.bcfv", _viewpoint_xml(guid))
-    return buf.getvalue()
+    data = buf.getvalue()
+
+    # M29: validate before returning. Any violation raises rather than
+    # returning invalid BCF. BCF_VALIDATE=0 disables for debugging.
+    import os as _os
+    import logging as _logging
+    if _os.environ.get("BCF_VALIDATE", "1") != "0":
+        from app.services.bcf_validate import BCFValidationError, validate_bcf_zip
+        violations = validate_bcf_zip(data)
+        if violations:
+            _bcf_log = _logging.getLogger("bimguard.bcf")
+            _bcf_log.error("BCF export produced %d schema violation(s)", len(violations))
+            for v in violations[:10]:
+                _bcf_log.error("  %s", v)
+            raise BCFValidationError(violations)
+
+    return data
