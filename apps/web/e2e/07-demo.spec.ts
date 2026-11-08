@@ -28,7 +28,7 @@ test.describe("Demo flow - UI", () => {
     // The main action links are present
     await expect(page.getByRole("link", { name: /validate for issue/i }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: /^impact$/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /^dependencies$/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /^dependencies$/i }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: /^reports$/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /^ask$/i })).toBeVisible();
   });

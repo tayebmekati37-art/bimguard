@@ -21,3 +21,6 @@ deploy/caddy/certs/*.crt
 deploy/caddy/certs/*.key
 deploy/caddy/certs/*.pem
 deploy/caddy/certs/*.pfx
+apps/web/playwright-report/
+apps/web/test-results/
+apps/api/.logs/
