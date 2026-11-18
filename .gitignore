@@ -24,3 +24,9 @@ deploy/caddy/certs/*.pfx
 apps/web/playwright-report/
 apps/web/test-results/
 apps/api/.logs/
+
+# TypeScript incremental build metadata
+apps/web/tsconfig.tsbuildinfo
+
+# Temporary isolated E2E databases
+apps/api/bimguard_e2e_*.db

@@ -1,47 +1,70 @@
 # End-to-end tests
 
-Playwright drives a real Chromium browser against a running BIMGuard.
+Playwright runs Chromium against the BIMGuard API and an isolated SQLite database.
 
-## First time
+## First-time setup
 
-    cd apps/web
-    npm install
-    npx playwright install chromium
+From the repository root:
 
-## Run
+```powershell
+cd apps/web
+npm ci
+npx playwright install chromium
+cd ../..
+```
 
-From C:\dev\bimguard:
+The Python environment must exist at `apps/api/.venv`.
 
-    powershell -ExecutionPolicy Bypass -File run_m11_e2e.ps1
+## Run on Windows
 
-The script:
+From the repository root:
 
-1. Creates a fresh apps/api/e2e.db and seeds five users.
-2. Starts the backend on 127.0.0.1:8001 as a background job.
-3. Lets Playwright spawn Next.js dev on 127.0.0.1:3001.
-4. Runs every spec under apps/web/e2e/.
-5. Stops the backend and prints the exit code.
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run_m11_e2e.ps1
+```
 
-## Headed vs headless
+The runner creates a uniquely named temporary SQLite database, applies migrations, seeds five test accounts, starts the API on port 8100, and lets Playwright start Next.js on port 3100. It then stops the API and removes its temporary database.
 
-Locally the browser is visible and slowed down (150 ms per action) so you can watch. In CI, `headless: process.env.CI === "true"` hides it.
+It does not modify `bimguard_dev.db` or `e2e.db`.
+
+## Test accounts
+
+All accounts use the local test password `admin-demo-pass`.
+
+| Role | Email |
+|---|---|
+| Admin | admin@example.local |
+| BIM coordinator | coordinator@example.local |
+| Engineer | engineer@example.local |
+| Reviewer | reviewer@example.local |
+| Viewer | viewer@example.local |
+
+These credentials are for local testing only.
 
 ## View the report
 
-    cd apps/web
-    npx playwright show-report
+After a test run, from `apps/web`:
 
-Or open `apps/web/playwright-report/index.html`.
+```powershell
+npx playwright show-report
+```
 
-## Files
+Alternatively, open `apps/web/playwright-report/index.html` from the repository root.
 
-- 01-auth.spec.ts - login, wrong password, correct login
-- 02-project.spec.ts - dashboard, projects list, project creation, detail page
-- 03-reports.spec.ts - readiness page, JSON download
-- 04-ask.spec.ts - ask a question, template answer rendered
-- 05-audit.spec.ts - audit log page, filter narrows results
-- 06-notifications.spec.ts - notifications page, bell in header
+## Headed vs headless
+
+Locally, the browser is visible and slowed down (150 ms per action) so you can watch. In CI, `headless: process.env.CI === "true"` hides it.
+
+## Test inventory
+
+- `01-auth.spec.ts` — login, wrong password, and correct login
+- `02-project.spec.ts` — dashboard, projects list, project creation, and detail page
+- `03-reports.spec.ts` — readiness page and JSON download
+- `04-ask.spec.ts` — question submission and template answer
+- `05-audit.spec.ts` — audit log and filtering
+- `06-notifications.spec.ts` — notifications page and header bell
+- `07-demo.spec.ts` — demo project, readiness, language switcher, and notifications
 
 ## Adding a test
 
-Drop a new .spec.ts under apps/web/e2e/. Import helpers from ./helpers.ts. Keep tests independent.
+Add a `.spec.ts` file under `apps/web/e2e/`. Import shared helpers from `./helpers.ts`. Keep tests independent.
